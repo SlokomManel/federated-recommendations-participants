@@ -215,6 +215,19 @@
             </div>
         </section>
 
+        <!-- Genre Swimlane -->
+        <section id="genre-swimlane-section" class="mb-10 hidden">
+            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <i data-lucide="tags" class="w-5 h-5 text-netflix-red"></i>
+                Your Genres
+            </h3>
+            <div class="relative">
+                <div id="genre-swimlane" class="flex gap-3 overflow-x-auto pb-4 scrollbar-hide" style="scrollbar-width: none; -ms-overflow-style: none;">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
         <!-- Charts Section -->
         <section id="charts-section" class="mb-10 hidden">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -497,6 +510,34 @@
             document.getElementById('stat-unique').textContent = stats ? stats.uniqueTitles : 0;
             document.getElementById('stat-top-genre').textContent = stats ? stats.topGenre : '-';
             document.getElementById('stat-diversity').textContent = stats ? stats.diversityScore : '-';
+            
+            // Render genre swimlane
+            renderGenreSwimlane(stats);
+        }
+        
+        function renderGenreSwimlane(stats) {
+            const swimlaneSection = document.getElementById('genre-swimlane-section');
+            const swimlane = document.getElementById('genre-swimlane');
+            
+            if (!stats || !stats.genres || stats.genres.length === 0) {
+                swimlaneSection.classList.add('hidden');
+                return;
+            }
+            
+            swimlaneSection.classList.remove('hidden');
+            
+            // Genres are already sorted by frequency (most found first) from calculateStats
+            // Format: [['Genre Name', count], ...]
+            swimlane.innerHTML = stats.genres.map(([genre, count]) => {
+                return `
+                    <div class="flex-shrink-0 px-4 py-2 bg-netflix-gray rounded-full text-white text-sm font-medium flex items-center gap-2 whitespace-nowrap">
+                        <span>${genre}</span>
+                        <span class="text-gray-400 text-xs">${count}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            lucide.createIcons();
         }
         
         // =========================================
