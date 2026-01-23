@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Click History - Netflix Recommendations</title>
+    
+    <!-- TailwindCSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- TailwindCSS Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'netflix-red': '#e50914',
+                        'netflix-red-dark': '#b81d24',
+                        'netflix-black': '#141414',
+                        'netflix-dark': '#1f1f1f',
+                        'netflix-gray': '#2d2d2d',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-netflix-black min-h-screen flex flex-col">
+    
+    <!-- Header -->
+    <header class="bg-gradient-to-b from-netflix-dark to-transparent text-white py-4 px-6 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                    <i data-lucide="film" class="w-8 h-8 text-netflix-red"></i>
+                    <h1 class="text-xl font-bold">Netflix Recommendations</h1>
+                </a>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="px-4 py-2 bg-netflix-gray hover:bg-gray-600 rounded-lg text-sm transition-colors flex items-center gap-2">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    Back to Recommendations
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8 flex-1">
+        
+        <!-- Page Header -->
+        <div class="text-center mb-10">
+            <h2 class="text-3xl font-bold text-white mb-4 flex items-center justify-center gap-3">
+                <i data-lucide="history" class="w-8 h-8 text-netflix-red"></i>
+                Your Click History
+            </h2>
+            <p class="text-gray-400 text-lg max-w-2xl mx-auto">
+                Shows you've clicked on. These help improve your recommendations.
+            </p>
+        </div>
+
+        <!-- Statistics Section -->
+        <section id="stats-section" class="mb-10 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-netflix-gray rounded-xl p-4 text-center">
+                <p id="stat-total" class="text-3xl font-bold text-white">0</p>
+                <p class="text-gray-400 text-sm">Total Clicks</p>
+            </div>
+            <div class="bg-netflix-gray rounded-xl p-4 text-center">
+                <p id="stat-unique" class="text-3xl font-bold text-white">0</p>
+                <p class="text-gray-400 text-sm">Unique Titles</p>
+            </div>
+            <div class="bg-netflix-gray rounded-xl p-4 text-center">
+                <p id="stat-top-genre" class="text-xl font-bold text-netflix-red truncate">-</p>
+                <p class="text-gray-400 text-sm">Favorite Genre</p>
+            </div>
+            <div class="bg-netflix-gray rounded-xl p-4 text-center">
+                <p id="stat-diversity" class="text-xl font-bold text-green-500">-</p>
+                <p class="text-gray-400 text-sm">Genre Diversity</p>
+            </div>
+        </section>
+
+        <!-- Genre Breakdown -->
+        <section id="genre-breakdown" class="mb-10 bg-netflix-gray rounded-xl p-6 hidden">
+            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <i data-lucide="pie-chart" class="w-5 h-5 text-netflix-red"></i>
+                Genre Breakdown
+            </h3>
+            <div id="genre-bars" class="space-y-3">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <!-- History List -->
+        <section id="history-section">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                    <i data-lucide="list" class="w-5 h-5"></i>
+                    Recent Activity
+                </h3>
+                <button id="clear-history-btn" class="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg text-sm transition-colors flex items-center gap-2">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    Clear History
+                </button>
+            </div>
+            
+            <div id="history-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <!-- Populated by JS -->
+            </div>
+            
+            <div id="empty-history" class="hidden text-center py-16">
+                <i data-lucide="inbox" class="w-16 h-16 text-gray-600 mx-auto mb-4"></i>
+                <p class="text-gray-400 text-lg">No click history yet</p>
+                <p class="text-gray-500 text-sm mt-2">Click on recommendations to start building your history</p>
+                <a href="index.html" class="netflix-btn mt-6 inline-flex">
+                    <i data-lucide="sparkles" class="w-4 h-4 mr-2"></i>
+                    View Recommendations
+                </a>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-netflix-dark py-6 px-4 mt-auto">
+        <div class="max-w-7xl mx-auto text-center">
+            <p class="text-gray-500 text-sm mb-2">
+                Part of the <strong class="text-netflix-red">#30DaysOfFLCode</strong> challenge
+            </p>
+            <p class="text-gray-600 text-xs">
+                Built with Federated Learning principles | 
+                <a href="https://github.com/gubertoli/syftbox-netflix" target="_blank" class="text-netflix-red hover:underline">
+                    View on GitHub
+                </a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- History Page Script -->
+    <script>
+        const HISTORY_KEY = 'netflix_click_history';
+        
+        function getClickHistory() {
+            try {
+                const stored = localStorage.getItem(HISTORY_KEY);
+                return stored ? JSON.parse(stored) : [];
+            } catch (error) {
+                console.error('Error loading click history:', error);
+                return [];
+            }
+        }
+        
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear your click history? This cannot be undone.')) {
+                localStorage.removeItem(HISTORY_KEY);
+                renderHistory();
+            }
+        }
+        
+        function calculateStats(history) {
+            if (history.length === 0) return null;
+            
+            // Total clicks (sum of all click counts)
+            const totalClicks = history.reduce((sum, item) => sum + (item.clickCount || 1), 0);
+            
+            // Unique titles
+            const uniqueTitles = history.length;
+            
+            // Genre analysis
+            const genreCounts = {};
+            history.forEach(item => {
+                if (item.genres) {
+                    item.genres.split(',').forEach(genre => {
+                        const g = genre.trim();
+                        if (g) {
+                            genreCounts[g] = (genreCounts[g] || 0) + (item.clickCount || 1);
+                        }
+                    });
+                }
+            });
+            
+            const genres = Object.entries(genreCounts).sort((a, b) => b[1] - a[1]);
+            const topGenre = genres.length > 0 ? genres[0][0] : '-';
+            
+            // Genre diversity (number of unique genres / potential max)
+            const uniqueGenres = Object.keys(genreCounts).length;
+            const diversityScore = uniqueGenres >= 10 ? 'Very Open' : 
+                                   uniqueGenres >= 6 ? 'Open' : 
+                                   uniqueGenres >= 3 ? 'Moderate' : 'Focused';
+            
+            return {
+                totalClicks,
+                uniqueTitles,
+                topGenre,
+                diversityScore,
+                genres,
+                uniqueGenres
+            };
+        }
+        
+        function renderStats(stats) {
+            document.getElementById('stat-total').textContent = stats ? stats.totalClicks : 0;
+            document.getElementById('stat-unique').textContent = stats ? stats.uniqueTitles : 0;
+            document.getElementById('stat-top-genre').textContent = stats ? stats.topGenre : '-';
+            document.getElementById('stat-diversity').textContent = stats ? stats.diversityScore : '-';
+            
+            // Genre breakdown
+            const genreSection = document.getElementById('genre-breakdown');
+            const genreBars = document.getElementById('genre-bars');
+            
+            if (stats && stats.genres.length > 0) {
+                genreSection.classList.remove('hidden');
+                const maxCount = stats.genres[0][1];
+                
+                genreBars.innerHTML = stats.genres.slice(0, 8).map(([genre, count]) => {
+                    const percentage = Math.round((count / maxCount) * 100);
+                    return `
+                        <div class="flex items-center gap-3">
+                            <span class="text-gray-300 text-sm w-32 truncate">${genre}</span>
+                            <div class="flex-1 bg-netflix-black rounded-full h-3 overflow-hidden">
+                                <div class="bg-netflix-red h-full rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                            </div>
+                            <span class="text-gray-400 text-sm w-8 text-right">${count}</span>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                genreSection.classList.add('hidden');
+            }
+        }
+        
+        function renderHistory() {
+            const history = getClickHistory();
+            const container = document.getElementById('history-container');
+            const emptyState = document.getElementById('empty-history');
+            
+            if (history.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                renderStats(null);
+                lucide.createIcons();
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            // Calculate and render stats
+            const stats = calculateStats(history);
+            renderStats(stats);
+            
+            // Render history items
+            container.innerHTML = history.map(item => `
+                <div class="bg-netflix-gray rounded-lg overflow-hidden group">
+                    <div class="relative aspect-[2/3]">
+                        <img 
+                            src="${item.img || ''}" 
+                            alt="${item.name || ''}" 
+                            class="w-full h-full object-cover"
+                            onerror="this.src='https://via.placeholder.com/300x450?text=No+Image'"
+                            loading="lazy"
+                        />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+                        ${item.clickCount > 1 ? `
+                            <div class="absolute top-2 right-2 bg-netflix-red text-white text-xs px-2 py-1 rounded-full">
+                                ${item.clickCount}x
+                            </div>
+                        ` : ''}
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <h4 class="text-white font-medium text-sm line-clamp-2">${item.name || 'Unknown'}</h4>
+                            <p class="text-gray-400 text-xs mt-1">${formatDate(item.clickedAt)}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            lucide.createIcons();
+        }
+        
+        function formatDate(dateString) {
+            try {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+                
+                if (diffMins < 1) return 'Just now';
+                if (diffMins < 60) return `${diffMins}m ago`;
+                if (diffHours < 24) return `${diffHours}h ago`;
+                if (diffDays < 7) return `${diffDays}d ago`;
+                
+                return date.toLocaleDateString();
+            } catch {
+                return '';
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderHistory();
+            
+            document.getElementById('clear-history-btn')?.addEventListener('click', clearHistory);
+            
+            lucide.createIcons();
+        });
+    </script>
+
+</body>
+</html>

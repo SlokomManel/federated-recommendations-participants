@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netflix Recommendations</title>
+    
+    <!-- TailwindCSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- TailwindCSS Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'netflix-red': '#e50914',
+                        'netflix-red-dark': '#b81d24',
+                        'netflix-black': '#141414',
+                        'netflix-dark': '#1f1f1f',
+                        'netflix-gray': '#2d2d2d',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-netflix-black min-h-screen flex flex-col">
+    
+    <!-- Header -->
+    <header class="bg-gradient-to-b from-netflix-dark to-transparent text-white py-4 px-6 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i data-lucide="film" class="w-8 h-8 text-netflix-red"></i>
+                <h1 class="text-xl font-bold">Netflix Recommendations</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-gray-400 hidden sm:block">Powered by SyftBox</span>
+                <a href="history.html" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Click History">
+                    <i data-lucide="history" class="w-6 h-6"></i>
+                </a>
+                <button id="settings-btn" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Settings">
+                    <i data-lucide="settings" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Settings Overlay -->
+    <div id="settings-overlay" class="fixed inset-0 bg-black/50 z-40 hidden"></div>
+    
+    <!-- Settings Panel (Slide from right) -->
+    <aside id="settings-panel" class="fixed top-0 right-0 h-full w-80 max-w-full bg-netflix-dark z-50 transform translate-x-full transition-transform duration-300 shadow-2xl overflow-y-auto">
+        <div class="p-6">
+            <!-- Panel Header -->
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    Settings
+                </h2>
+                <button id="close-settings-btn" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+                </button>
+            </div>
+            
+            <!-- User Profile Section -->
+            <div class="mb-8 p-4 bg-netflix-gray rounded-lg">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-netflix-red rounded-full flex items-center justify-center">
+                        <i data-lucide="user" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-400">Signed in as</p>
+                        <p id="user-email" class="text-white font-medium text-sm truncate max-w-[180px]">Loading...</p>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-500 flex items-center gap-1">
+                    <i data-lucide="shield-check" class="w-3 h-3"></i>
+                    Data stored locally & privately
+                </div>
+            </div>
+            
+            <!-- Feature Toggles -->
+            <div class="space-y-4">
+                <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Display Options</h3>
+                
+                <!-- Show More Details Toggle -->
+                <label class="flex items-start gap-3 p-3 bg-netflix-gray rounded-lg cursor-pointer hover:bg-opacity-80 transition-colors">
+                    <input type="checkbox" id="toggle-more-details" class="toggle-checkbox mt-1">
+                    <div class="flex-1">
+                        <span class="text-white font-medium block">Show More Details</span>
+                        <span class="text-gray-400 text-sm">Display rating, year, and genre on each card</span>
+                    </div>
+                </label>
+                
+                <!-- Use Re-ranked Toggle -->
+                <label class="flex items-start gap-3 p-3 bg-netflix-gray rounded-lg cursor-pointer hover:bg-opacity-80 transition-colors">
+                    <input type="checkbox" id="toggle-reranked" class="toggle-checkbox mt-1">
+                    <div class="flex-1">
+                        <span class="text-white font-medium block">Use Re-ranked List</span>
+                        <span class="text-gray-400 text-sm">Show diversity-enhanced recommendations</span>
+                    </div>
+                </label>
+                
+                <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 mt-6">Modal Features</h3>
+                
+                <!-- Why Recommended Toggle -->
+                <label class="flex items-start gap-3 p-3 bg-netflix-gray rounded-lg cursor-pointer hover:bg-opacity-80 transition-colors">
+                    <input type="checkbox" id="toggle-why-recommended" class="toggle-checkbox mt-1">
+                    <div class="flex-1">
+                        <span class="text-white font-medium block">Why Recommended</span>
+                        <span class="text-gray-400 text-sm">Show explanation for each recommendation</span>
+                    </div>
+                </label>
+                
+                <!-- Watchlist Actions Toggle -->
+                <label class="flex items-start gap-3 p-3 bg-netflix-gray rounded-lg cursor-pointer hover:bg-opacity-80 transition-colors">
+                    <input type="checkbox" id="toggle-watchlist" class="toggle-checkbox mt-1">
+                    <div class="flex-1">
+                        <span class="text-white font-medium block">Enable Watchlist</span>
+                        <span class="text-gray-400 text-sm">Add will/won't watch options</span>
+                    </div>
+                </label>
+                
+                <!-- Don't Recommend Again Toggle -->
+                <label class="flex items-start gap-3 p-3 bg-netflix-gray rounded-lg cursor-pointer hover:bg-opacity-80 transition-colors">
+                    <input type="checkbox" id="toggle-block-items" class="toggle-checkbox mt-1">
+                    <div class="flex-1">
+                        <span class="text-white font-medium block">Don't Recommend Again</span>
+                        <span class="text-gray-400 text-sm">Hide items you're not interested in</span>
+                    </div>
+                </label>
+            </div>
+            
+            <!-- Blocked Items Section (shown when toggle is enabled) -->
+            <div id="blocked-items-section" class="mt-6 hidden">
+                <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Hidden Items</h3>
+                <div id="blocked-items-list" class="space-y-2 max-h-40 overflow-y-auto">
+                    <p class="text-gray-500 text-sm">No items hidden yet</p>
+                </div>
+                <button id="clear-blocked-items" class="mt-3 text-xs text-red-400 hover:text-red-300 transition-colors hidden">
+                    Clear all hidden items
+                </button>
+            </div>
+            
+            <!-- Footer -->
+            <div class="mt-8 pt-4 border-t border-gray-700">
+                <p class="text-xs text-gray-500 text-center">
+                    Settings are saved locally in your browser
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8 flex-1">
+        
+        <!-- Loading Section -->
+        <section id="loading-section" class="flex flex-col items-center justify-center py-20">
+            <div class="w-16 h-16 border-4 border-netflix-red border-t-transparent rounded-full animate-spin mb-6"></div>
+            <p id="status-message" class="text-gray-300 text-lg">Loading...</p>
+        </section>
+
+        <!-- Error Section -->
+        <section id="error-section" class="hidden flex flex-col items-center justify-center py-20">
+            <div class="bg-red-900/30 border border-red-600 rounded-lg p-8 max-w-md text-center">
+                <i data-lucide="alert-triangle" class="w-16 h-16 text-red-500 mx-auto mb-4"></i>
+                <p id="error-message" class="text-red-400 text-lg mb-4">An error occurred</p>
+                <button id="retry-btn" class="netflix-btn">
+                    <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
+                    Try Again
+                </button>
+            </div>
+        </section>
+
+        <!-- Upload Section (No viewing history) -->
+        <section id="upload-section" class="hidden flex flex-col items-center justify-center py-20">
+            <div class="bg-netflix-dark rounded-xl p-8 max-w-lg text-center shadow-xl">
+                <i data-lucide="upload-cloud" class="w-20 h-20 text-netflix-red mx-auto mb-6"></i>
+                <h2 class="text-2xl font-bold text-white mb-4">No Viewing History Found</h2>
+                <p class="text-gray-400 mb-6">
+                    Upload your Netflix viewing history to get personalized recommendations.
+                    <br><br>
+                    <span class="text-sm">Download it from Netflix: Account → Profile → Viewing Activity → Download all</span>
+                </p>
+                <!-- Drop zone -->
+                <div id="drop-zone" class="border-2 border-dashed border-gray-600 rounded-lg p-8 mb-4 hover:border-netflix-red transition-colors cursor-pointer">
+                    <input type="file" id="file-input" accept=".csv" class="hidden">
+                    <i data-lucide="file-up" class="w-12 h-12 text-gray-500 mx-auto mb-3"></i>
+                    <p class="text-gray-400">Drag & drop your CSV here</p>
+                    <p class="text-gray-500 text-sm mt-2">or click to browse</p>
+                </div>
+                <p id="upload-status" class="text-sm text-gray-500"></p>
+            </div>
+        </section>
+
+        <!-- Compute Section (No recommendations available) -->
+        <section id="compute-section" class="hidden flex flex-col items-center justify-center py-20">
+            <div class="bg-netflix-dark rounded-xl p-8 max-w-lg text-center shadow-xl">
+                <i data-lucide="sparkles" class="w-20 h-20 text-netflix-red mx-auto mb-6"></i>
+                <h2 class="text-2xl font-bold text-white mb-4">No Recommendations Yet</h2>
+                <p class="text-gray-400 mb-6">
+                    Your personalized recommendations haven't been computed yet. 
+                    Click below to generate recommendations based on your viewing history.
+                </p>
+                <button id="compute-btn" class="netflix-btn text-lg inline-flex items-center gap-2">
+                    <i data-lucide="zap" class="w-5 h-5"></i>
+                    Compute Recommendations
+                </button>
+            </div>
+        </section>
+
+        <!-- Content Section (Recommendations available) -->
+        <section id="content-section" class="hidden">
+            
+            <!-- Description -->
+            <div class="text-center mb-6">
+                <h2 class="text-3xl font-bold text-white mb-4">
+                    Recommended For You
+                </h2>
+                <p class="text-gray-400 text-lg max-w-2xl mx-auto">
+                    Based on your viewing history. Click on any show to see details.
+                </p>
+                <!-- List type indicator and refresh button -->
+                <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
+                    <div id="list-type-badge" class="inline-flex items-center gap-2 px-4 py-2 bg-netflix-gray rounded-full text-sm text-gray-300">
+                        <i data-lucide="list" class="w-4 h-4"></i>
+                        <span id="list-type-text">Standard Recommendations</span>
+                    </div>
+                    <button id="refresh-btn" class="inline-flex items-center gap-2 px-4 py-2 bg-netflix-red hover:bg-netflix-red-dark rounded-full text-sm text-white transition-colors" title="Retrain model and refresh recommendations">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Genre Filter Badges -->
+            <div id="genre-filters" class="mb-6">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm text-gray-400 flex items-center gap-2">
+                        <i data-lucide="filter" class="w-4 h-4"></i>
+                        Filter by genre
+                    </p>
+                    <button id="clear-genre-filters" class="text-xs text-gray-500 hover:text-gray-300 transition-colors hidden">
+                        Clear filters
+                    </button>
+                </div>
+                <div id="genre-badges" class="flex flex-wrap gap-2 justify-center">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Horizontal 5-item Recommendations Row -->
+            <div id="recommendations-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <!-- Recommendations will be populated by JavaScript -->
+            </div>
+            
+            <!-- Pagination Controls -->
+            <div id="pagination-controls" class="flex items-center justify-center gap-4 mt-8">
+                <button id="prev-page-btn" class="px-4 py-2 bg-netflix-gray hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                    Previous
+                </button>
+                <div class="flex items-center gap-2">
+                    <span id="current-page" class="text-white font-medium">1</span>
+                    <span class="text-gray-500">/</span>
+                    <span id="total-pages" class="text-gray-400">1</span>
+                </div>
+                <button id="next-page-btn" class="px-4 py-2 bg-netflix-gray hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2">
+                    Next
+                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Footer Info -->
+            <div class="mt-12 text-center">
+                <p class="text-gray-500 text-sm flex items-center justify-center gap-2">
+                    <i data-lucide="lock" class="w-4 h-4"></i>
+                    Your data stays private with federated learning
+                </p>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Privacy Policy Modal (shown on first visit) -->
+    <div id="privacy-overlay" class="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-6 hidden">
+        <div class="bg-netflix-dark rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden">
+            <div class="p-8">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-14 h-14 bg-netflix-red/20 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="shield" class="w-7 h-7 text-netflix-red"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Privacy Notice</h2>
+                        <p class="text-gray-400">Please read before continuing</p>
+                    </div>
+                </div>
+                
+                <div class="bg-netflix-gray rounded-lg p-5 mb-8 text-sm text-gray-300 max-h-72 overflow-y-auto space-y-4">
+                    <p>
+                        <strong class="text-white">How This App Works:</strong><br>
+                        This application uses <strong class="text-netflix-red">Federated Learning</strong> to provide personalized Netflix recommendations while keeping your data private.
+                    </p>
+                    
+                    <p>
+                        <strong class="text-white">Your Data Stays Local:</strong><br>
+                        Your Netflix viewing history and preferences are processed locally on your device. Only anonymized model updates are shared, never your raw data.
+                    </p>
+                    
+                    <p>
+                        <strong class="text-white">What We Collect:</strong><br>
+                        - Your recommendation choices (which shows you click on)<br>
+                        - Optional feedback ratings<br>
+                        - Local preferences stored in your browser
+                    </p>
+                    
+                    <p>
+                        <strong class="text-white">Your Control:</strong><br>
+                        You can clear your click history at any time from the History page. All browser data can be deleted by clearing your browser's local storage.
+                    </p>
+                </div>
+                
+                <div class="flex gap-4">
+                    <button id="privacy-decline-btn" class="flex-1 px-6 py-3.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg font-medium transition-colors">
+                        Decline
+                    </button>
+                    <button id="privacy-accept-btn" class="flex-1 px-6 py-3.5 bg-netflix-red hover:bg-netflix-red-dark text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="check" class="w-5 h-5"></i>
+                        Accept & Continue
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4"></div>
+    <div id="detail-modal" class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-netflix-dark rounded-xl z-50 hidden overflow-hidden max-h-[90vh]">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-4 border-b border-gray-700">
+            <h3 id="modal-title" class="text-xl font-bold text-white truncate pr-4">Show Title</h3>
+            <button id="modal-close-btn" class="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0">
+                <i data-lucide="x" class="w-6 h-6 text-gray-400"></i>
+            </button>
+        </div>
+        
+        <!-- Modal Content -->
+        <div class="overflow-y-auto p-6 max-h-[calc(90vh-60px)]">
+            <div class="flex flex-col sm:flex-row gap-6">
+                <!-- Poster -->
+                <div class="flex-shrink-0 mx-auto sm:mx-0">
+                    <img id="modal-poster" src="" alt="" class="w-40 sm:w-44 rounded-lg shadow-lg">
+                </div>
+                
+                <!-- Info -->
+                <div class="flex-1 min-w-0">
+                    <!-- Meta info -->
+                    <div id="modal-meta" class="flex flex-wrap items-center gap-2 text-gray-300 mb-3 text-sm">
+                        <!-- Populated by JS -->
+                    </div>
+                    
+                    <!-- Type badge -->
+                    <span id="modal-type" class="inline-block px-3 py-1 bg-netflix-red/20 text-netflix-red rounded-full text-xs mb-3">TV Show</span>
+                    
+                    <!-- Genres -->
+                    <p id="modal-genres" class="text-gray-400 text-sm mb-3"></p>
+                    
+                    <!-- Description -->
+                    <p id="modal-description" class="text-gray-300 text-sm leading-relaxed"></p>
+                </div>
+            </div>
+            
+            <!-- Director & Cast (collapsible info) -->
+            <div class="mt-4 pt-4 border-t border-gray-700 text-sm">
+                <div id="modal-director-section" class="mb-2 hidden">
+                    <span class="text-gray-500">Director: </span>
+                    <span id="modal-director" class="text-gray-300"></span>
+                </div>
+                <div id="modal-cast-section" class="hidden">
+                    <span class="text-gray-500">Cast: </span>
+                    <span id="modal-cast" class="text-gray-300"></span>
+                </div>
+            </div>
+            
+            <!-- Why Recommended Section -->
+            <div id="modal-why-section" class="mt-4 p-4 bg-netflix-gray rounded-lg hidden">
+                <h4 class="text-white font-semibold mb-2 flex items-center gap-2 text-sm">
+                    <i data-lucide="lightbulb" class="w-4 h-4 text-yellow-500"></i>
+                    Why We Recommended This
+                </h4>
+                <p id="modal-why-text" class="text-gray-400 text-sm"></p>
+            </div>
+            
+            <!-- Watchlist Actions -->
+            <div id="modal-watchlist-section" class="mt-4 flex gap-3 hidden">
+                <button id="will-watch-btn" class="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors inline-flex items-center justify-center gap-2 text-sm">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    Will Watch
+                </button>
+                <button id="wont-watch-btn" class="flex-1 px-4 py-2.5 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors inline-flex items-center justify-center gap-2 text-sm">
+                    <i data-lucide="x-circle" class="w-4 h-4"></i>
+                    Won't Watch
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Button (Fixed bottom right) -->
+    <button id="feedback-trigger" class="fixed bottom-6 right-6 z-30 bg-netflix-red hover:bg-netflix-red-dark text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 group">
+        <i data-lucide="message-square-heart" class="w-6 h-6"></i>
+        <span class="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-netflix-dark text-white text-sm px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+            Give Feedback
+        </span>
+    </button>
+    
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="fixed bottom-20 right-6 z-40 bg-netflix-dark rounded-xl shadow-2xl w-80 hidden transform transition-all duration-300 scale-95 opacity-0">
+        <div class="p-4 border-b border-gray-700">
+            <div class="flex items-center justify-between">
+                <h3 class="text-white font-semibold flex items-center gap-2">
+                    <i data-lucide="star" class="w-5 h-5 text-yellow-500"></i>
+                    Rate This App
+                </h3>
+                <button id="close-feedback" class="p-1 hover:bg-white/10 rounded transition-colors">
+                    <i data-lucide="x" class="w-4 h-4 text-gray-400"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="p-4 space-y-4">
+            <!-- Star Rating -->
+            <div class="text-center">
+                <p class="text-gray-400 text-sm mb-2">How would you rate your experience?</p>
+                <div id="star-rating" class="flex justify-center gap-2">
+                    <button class="star-btn p-1 transition-transform hover:scale-125" data-rating="1">
+                        <i data-lucide="star" class="w-8 h-8 text-gray-600 star-icon"></i>
+                    </button>
+                    <button class="star-btn p-1 transition-transform hover:scale-125" data-rating="2">
+                        <i data-lucide="star" class="w-8 h-8 text-gray-600 star-icon"></i>
+                    </button>
+                    <button class="star-btn p-1 transition-transform hover:scale-125" data-rating="3">
+                        <i data-lucide="star" class="w-8 h-8 text-gray-600 star-icon"></i>
+                    </button>
+                    <button class="star-btn p-1 transition-transform hover:scale-125" data-rating="4">
+                        <i data-lucide="star" class="w-8 h-8 text-gray-600 star-icon"></i>
+                    </button>
+                    <button class="star-btn p-1 transition-transform hover:scale-125" data-rating="5">
+                        <i data-lucide="star" class="w-8 h-8 text-gray-600 star-icon"></i>
+                    </button>
+                </div>
+                <p id="rating-label" class="text-gray-500 text-xs mt-1 h-4"></p>
+            </div>
+            
+            <!-- Feedback Text -->
+            <div>
+                <label class="text-gray-400 text-sm block mb-1">Additional feedback (optional)</label>
+                <textarea id="feedback-text" rows="3" class="w-full bg-netflix-gray border border-gray-600 rounded-lg p-3 text-white text-sm resize-none focus:outline-none focus:border-netflix-red" placeholder="What could we improve?"></textarea>
+            </div>
+            
+            <!-- Submit -->
+            <button id="submit-feedback" class="w-full py-2.5 bg-netflix-red hover:bg-netflix-red-dark disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2" disabled>
+                <i data-lucide="send" class="w-4 h-4"></i>
+                Submit Feedback
+            </button>
+            
+            <p class="text-gray-500 text-xs text-center">
+                Feedback is sent anonymously via email
+            </p>
+        </div>
+    </div>
+
+    <!-- Footer (always at bottom) -->
+    <footer class="bg-netflix-dark py-6 px-4 mt-auto">
+        <div class="max-w-7xl mx-auto text-center">
+            <p class="text-gray-500 text-sm mb-2">
+                Part of the <strong class="text-netflix-red">#30DaysOfFLCode</strong> challenge
+            </p>
+            <p class="text-gray-600 text-xs">
+                Built with Federated Learning principles | 
+                <a href="https://github.com/gubertoli/syftbox-netflix" target="_blank" class="text-netflix-red hover:underline">
+                    View on GitHub
+                </a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript (order matters) -->
+    <script src="js/api.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/modal.js"></script>
+    <script src="js/feedback.js"></script>
+    <script src="js/app.js"></script>
+    
+    <!-- Initialize Lucide icons -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
+
+</body>
+</html>

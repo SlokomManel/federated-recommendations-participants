@@ -1,0 +1,299 @@
+/**
+ * Custom styles for Netflix Recommendations UI
+ * TailwindCSS is loaded via CDN in index.html
+ */
+
+/* Custom Netflix-inspired color scheme */
+:root {
+    --netflix-red: #e50914;
+    --netflix-red-dark: #b81d24;
+    --netflix-black: #141414;
+    --netflix-dark: #1f1f1f;
+    --netflix-gray: #2d2d2d;
+    --netflix-light-gray: #333333;
+}
+
+/* Base styles */
+body {
+    background-color: var(--netflix-black);
+    color: #ffffff;
+    font-family: 'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* =========================================
+   Toggle Switch Component
+   ========================================= */
+.toggle-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 44px;
+    height: 24px;
+    background-color: #4a4a4a;
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    flex-shrink: 0;
+}
+
+.toggle-checkbox::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: white;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s ease;
+}
+
+.toggle-checkbox:checked {
+    background-color: var(--netflix-red);
+}
+
+.toggle-checkbox:checked::before {
+    transform: translateX(20px);
+}
+
+.toggle-checkbox:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(229, 9, 20, 0.3);
+}
+
+/* =========================================
+   Card Styles
+   ========================================= */
+.recommendation-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.recommendation-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+}
+
+.recommendation-card img {
+    transition: opacity 0.3s ease;
+}
+
+/* =========================================
+   Netflix-style Button
+   ========================================= */
+.netflix-btn {
+    background-color: var(--netflix-red);
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 2rem;
+    border-radius: 4px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.netflix-btn:hover {
+    background-color: var(--netflix-red-dark);
+    transform: scale(1.02);
+}
+
+.netflix-btn:disabled {
+    background-color: #666;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* =========================================
+   Settings Panel
+   ========================================= */
+#settings-panel {
+    scrollbar-width: thin;
+    scrollbar-color: var(--netflix-gray) transparent;
+}
+
+#settings-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+#settings-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#settings-panel::-webkit-scrollbar-thumb {
+    background: var(--netflix-gray);
+    border-radius: 3px;
+}
+
+/* =========================================
+   Modal Styles
+   ========================================= */
+#detail-modal {
+    max-width: 700px;
+    width: calc(100% - 2rem);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+#modal-poster {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+@media (max-width: 640px) {
+    #detail-modal {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        transform: none;
+        max-width: 100%;
+        width: 100%;
+        border-radius: 1rem 1rem 0 0;
+        max-height: 85vh;
+    }
+}
+
+/* =========================================
+   Scrollbar Styling
+   ========================================= */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--netflix-black);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--netflix-light-gray);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* =========================================
+   Line Clamp Utilities
+   ========================================= */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* =========================================
+   Responsive Adjustments
+   ========================================= */
+@media (max-width: 640px) {
+    .recommendation-card:hover {
+        transform: scale(1.02);
+    }
+    
+    #detail-modal {
+        inset: 0 !important;
+        border-radius: 0;
+    }
+}
+
+/* =========================================
+   Animations
+   ========================================= */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+/* =========================================
+   Lucide Icon Adjustments
+   ========================================= */
+[data-lucide] {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* =========================================
+   Toast Notifications
+   ========================================= */
+.toast-enter {
+    transform: translateY(100%);
+    opacity: 0;
+}
+
+.toast-enter-active {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* =========================================
+   Aspect Ratio Utility
+   ========================================= */
+.aspect-\[2\/3\] {
+    aspect-ratio: 2 / 3;
+}
+
+/* =========================================
+   Header Gradient
+   ========================================= */
+header {
+    background: linear-gradient(to bottom, rgba(20, 20, 20, 0.95) 0%, rgba(20, 20, 20, 0.7) 50%, transparent 100%);
+}
+
+/* =========================================
+   Focus Styles for Accessibility
+   ========================================= */
+button:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--netflix-red);
+    outline-offset: 2px;
+}
+
+/* =========================================
+   Selection Color
+   ========================================= */
+::selection {
+    background-color: var(--netflix-red);
+    color: white;
+}
