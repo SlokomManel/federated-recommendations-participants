@@ -9,7 +9,11 @@ from fastapi import APIRouter, BackgroundTasks, UploadFile, File
 from fastapi.responses import JSONResponse
 
 from src.config import APP_NAME, AGGREGATOR_DATASITE
-from src.core import client, get_private_path, get_shared_folder_path
+from src.core import (
+    client,
+    get_private_path,
+    setup_environment,
+)
 from src.services.enrichment import enrich_recommendation
 from src.services.io import recommendations_exist, load_recommendations
 from src.services.recommendations import (
@@ -26,6 +30,45 @@ from src.services.federated_learning import (
 )
 
 router = APIRouter(prefix="/api")
+
+
+def _ensure_csv_has_header(csv_file_path: Path, header_row: list[str]) -> None:
+    """
+    Ensure a CSV exists and has the expected header as the first row.
+
+    If the file doesn't exist, it is created with the header.
+    If it exists but is empty, it is overwritten with the header.
+    If it exists but has a different first row, the file is rewritten with the
+    expected header prepended (keeping existing content).
+    """
+    csv_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if not csv_file_path.exists():
+        with open(csv_file_path, "w", newline="", encoding="utf-8") as f:
+            csv.writer(f).writerow(header_row)
+        return
+
+    # Read the first row (if any) and the remainder verbatim.
+    with open(csv_file_path, "r", newline="", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        first_row = next(reader, None)
+        rest = f.read()
+
+    # Empty file: overwrite with header
+    if not first_row:
+        with open(csv_file_path, "w", newline="", encoding="utf-8") as f:
+            csv.writer(f).writerow(header_row)
+        return
+
+    # Already correct
+    if first_row == header_row:
+        return
+
+    # Rewrite with header + original content (including original first line)
+    with open(csv_file_path, "w", newline="", encoding="utf-8") as f:
+        csv.writer(f).writerow(header_row)
+        f.write(",".join(first_row) + "\n")
+        f.write(rest)
 
 
 @router.get("/health")
@@ -250,8 +293,13 @@ async def api_watchlist(data: dict):
         
         row = [timestamp, client.email, page, visible_items, item_from_column, title, action]
         
-        csv_file_path = Path(
-            client.datasite_path.parent / AGGREGATOR_DATASITE / "app_data" / APP_NAME / "shared" / "recommendations.csv"
+        # NOTE: Do NOT write into the aggregator's `shared/` folder, since that is publicly readable.
+        # Instead write into our own restricted app_data folder with permissions granting the aggregator read access.
+        _, restricted_public_folder, _ = setup_environment("profile_0")
+        csv_file_path = restricted_public_folder / "interaction_logs" / "recommendations.csv"
+        _ensure_csv_has_header(
+            csv_file_path,
+            ["timestamp", "user", "page", "visible_items", "column", "title", "action"],
         )
         
         with open(csv_file_path, "a", newline='', encoding="utf-8") as f:
@@ -296,23 +344,30 @@ async def api_choice(data: dict):
         
         if data.get('column') == 1:
             column = "Unprocessed"
-            title_chosen = next((item["name"] for item in raw_recommends if item["id"] == data.get('id')), None)
+            title = next((item["name"] for item in raw_recommends if item["id"] == data.get('id')), None)
         else:
             column = "Re-ranked"
-            title_chosen = next((item["name"] for item in reranked_recommends if item["id"] == data.get('id')), None)
+            title = next((item["name"] for item in reranked_recommends if item["id"] == data.get('id')), None)
 
-        row = [timestamp, client.email, page, visible_items, column, title_chosen]
+        # Keep a consistent schema with `/watchlist` rows by filling `action`.
+        row = [timestamp, client.email, page, visible_items, column, title, "clicked"]
 
-        csv_file_path = Path(client.datasite_path.parent / AGGREGATOR_DATASITE / "app_data" / APP_NAME / "shared" / "recommendations.csv")
+        # Store privately (restricted to aggregator-read) instead of publishing to aggregator shared.
+        _, restricted_public_folder, _ = setup_environment("profile_0")
+        csv_file_path = restricted_public_folder / "interaction_logs" / "recommendations.csv"
+        _ensure_csv_has_header(
+            csv_file_path,
+            ["timestamp", "user", "page", "visible_items", "column", "title", "action"],
+        )
 
-        logging.info(f"Recording choice: {title_chosen} from {column} (page {page})")
+        logging.info(f"Recording choice: {title} from {column} (page {page})")
         with open(csv_file_path, "a", newline='', encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(row)
 
         return JSONResponse({
             "status": "success",
-            "message": f"Received choice from {column} (ID: {data.get('id')} - {title_chosen}, page {page})"
+            "message": f"Received choice from {column} (ID: {data.get('id')} - {title}, page {page})"
         })
         
     except Exception as e:
@@ -339,7 +394,9 @@ async def api_feedback(data: dict):
         
         row = [timestamp, client.email, rating, feedback_text]
         
-        csv_file_path = Path(client.datasite_path.parent / AGGREGATOR_DATASITE / "app_data" / APP_NAME / "shared" / "feedback.csv")
+        # Store privately (restricted to aggregator-read) instead of publishing to aggregator shared.
+        _, restricted_public_folder, _ = setup_environment("profile_0")
+        csv_file_path = restricted_public_folder / "interaction_logs" / "feedback.csv"
         
         import os
         if not csv_file_path.exists():
