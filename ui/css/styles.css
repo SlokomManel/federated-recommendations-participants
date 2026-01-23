@@ -297,3 +297,62 @@ a:focus-visible {
     background-color: var(--netflix-red);
     color: white;
 }
+
+/* =========================================
+   Chart Container Styles
+   ========================================= */
+.chart-container {
+    position: relative;
+    width: 100%;
+}
+
+.chart-container canvas {
+    max-width: 100%;
+}
+
+/* =========================================
+   History Card Styles
+   ========================================= */
+.history-card {
+    position: relative;
+}
+
+.history-card:hover {
+    z-index: 10;
+}
+
+/* Status badge animations */
+.history-card [data-lucide] {
+    display: inline-block;
+}
+
+/* Will watch badge pulse effect */
+.history-card .bg-green-600 {
+    animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(22, 163, 74, 0);
+    }
+}
+
+/* Won't watch dimmed overlay */
+.history-card .bg-black\/50 {
+    pointer-events: none;
+}
+
+/* =========================================
+   Profile Page Stats Cards
+   ========================================= */
+#stats-section .bg-netflix-gray {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#stats-section .bg-netflix-gray:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}

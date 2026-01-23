@@ -11,7 +11,9 @@ const DEFAULT_SETTINGS = {
     useReranked: false,          // Use re-ranked recommendations instead of raw
     showWhyRecommended: false,   // Show "why recommended" in modal
     enableWatchlist: false,      // Enable will/won't watch buttons
-    enableBlockItems: false      // Enable "don't recommend again" feature
+    enableBlockItems: false,     // Enable "don't recommend again" feature
+    showActivityCharts: true,    // Show charts on profile page
+    showWatchlistStatus: true    // Show will/won't watch badges on history items
 };
 
 // Blocked items storage key
@@ -206,7 +208,9 @@ function initSettingsPanel() {
         'toggle-reranked': 'useReranked',
         'toggle-why-recommended': 'showWhyRecommended',
         'toggle-watchlist': 'enableWatchlist',
-        'toggle-block-items': 'enableBlockItems'
+        'toggle-block-items': 'enableBlockItems',
+        'toggle-activity-charts': 'showActivityCharts',
+        'toggle-watchlist-status': 'showWatchlistStatus'
     };
     
     Object.entries(toggles).forEach(([elementId, settingKey]) => {
@@ -229,7 +233,9 @@ function setupSettingsListeners() {
         'toggle-reranked': 'useReranked',
         'toggle-why-recommended': 'showWhyRecommended',
         'toggle-watchlist': 'enableWatchlist',
-        'toggle-block-items': 'enableBlockItems'
+        'toggle-block-items': 'enableBlockItems',
+        'toggle-activity-charts': 'showActivityCharts',
+        'toggle-watchlist-status': 'showWatchlistStatus'
     };
     
     Object.entries(toggles).forEach(([elementId, settingKey]) => {

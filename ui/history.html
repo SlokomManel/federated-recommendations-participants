@@ -3,13 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Click History - Netflix Recommendations</title>
+    <title>My Profile & Stats - Netflix Recommendations</title>
     
     <!-- TailwindCSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Custom styles -->
     <link rel="stylesheet" href="css/styles.css">
@@ -37,19 +40,146 @@
     <header class="bg-gradient-to-b from-netflix-dark to-transparent text-white py-4 px-6 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <a href="index.html" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                    <i data-lucide="film" class="w-8 h-8 text-netflix-red"></i>
-                    <h1 class="text-xl font-bold">Netflix Recommendations</h1>
-                </a>
+                <i data-lucide="film" class="w-8 h-8 text-netflix-red"></i>
+                <h1 class="text-xl font-bold">Netflix Recommendations</h1>
             </div>
             <div class="flex items-center gap-4">
-                <a href="index.html" class="px-4 py-2 bg-netflix-gray hover:bg-gray-600 rounded-lg text-sm transition-colors flex items-center gap-2">
-                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
-                    Back to Recommendations
+                <span class="text-sm text-gray-400 hidden sm:block">Powered by SyftBox</span>
+                <a href="index.html" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Back to Recommendations">
+                    <i data-lucide="arrow-left" class="w-6 h-6"></i>
                 </a>
+                <button id="settings-btn" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Settings">
+                    <i data-lucide="settings" class="w-6 h-6"></i>
+                </button>
             </div>
         </div>
     </header>
+
+    <!-- Settings Overlay -->
+    <div id="settings-overlay" class="fixed inset-0 bg-black/50 z-40 hidden"></div>
+    
+    <!-- Settings Panel (Slide from right) -->
+    <aside id="settings-panel" class="fixed top-0 right-0 h-full w-80 max-w-full bg-netflix-dark z-50 transform translate-x-full transition-transform duration-300 shadow-2xl overflow-y-auto">
+        <div class="p-6">
+            <!-- Panel Header -->
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    Settings
+                </h2>
+                <button id="close-settings-btn" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+                </button>
+            </div>
+            
+            <!-- User Profile Section -->
+            <div class="mb-8 p-4 bg-netflix-gray rounded-lg">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-netflix-red rounded-full flex items-center justify-center">
+                        <i data-lucide="user" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-400">Signed in as</p>
+                        <p id="user-email" class="text-white font-medium text-sm truncate max-w-[180px]">Loading...</p>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-500 flex items-center gap-1">
+                    <i data-lucide="shield-check" class="w-3 h-3"></i>
+                    Data stored locally & privately
+                </div>
+            </div>
+            
+            <!-- Feature Toggles -->
+            <div class="space-y-4">
+                <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Display Options</h3>
+                
+                <!-- Show More Details Toggle -->
+                <label class="flex items-start gap-3 p-3 bg-netflix-gray rounded-lg cursor-pointer hover:bg-opacity-80 transition-colors">
+                    <input type="checkbox" id="toggle-more-details" class="toggle-checkbox mt-1">
+                    <div class="flex-1">
+                        <span class="text-white font-medium block">Show More Details</span>
+                        <span class="text-gray-400 text-sm">Display rating, year, and genre on each card</span>
+                    </div>
+                </label>
+                
+                <!-- Use Re-ranked Toggle -->
+                <label class="flex items-start gap-3 p-3 bg-netflix-gray rounded-lg cursor-pointer hover:bg-opacity-80 transition-colors">
+                    <input type="checkbox" id="toggle-reranked" class="toggle-checkbox mt-1">
+                    <div class="flex-1">
+                        <span class="text-white font-medium block">Use Re-ranked List</span>
+                        <span class="text-gray-400 text-sm">Show diversity-enhanced recommendations</span>
+                    </div>
+                </label>
+                
+                <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 mt-6">Modal Features</h3>
+                
+                <!-- Why Recommended Toggle -->
+                <label class="flex items-start gap-3 p-3 bg-netflix-gray rounded-lg cursor-pointer hover:bg-opacity-80 transition-colors">
+                    <input type="checkbox" id="toggle-why-recommended" class="toggle-checkbox mt-1">
+                    <div class="flex-1">
+                        <span class="text-white font-medium block">Why Recommended</span>
+                        <span class="text-gray-400 text-sm">Show explanation for each recommendation</span>
+                    </div>
+                </label>
+                
+                <!-- Watchlist Actions Toggle -->
+                <label class="flex items-start gap-3 p-3 bg-netflix-gray rounded-lg cursor-pointer hover:bg-opacity-80 transition-colors">
+                    <input type="checkbox" id="toggle-watchlist" class="toggle-checkbox mt-1">
+                    <div class="flex-1">
+                        <span class="text-white font-medium block">Enable Watchlist</span>
+                        <span class="text-gray-400 text-sm">Add will/won't watch options</span>
+                    </div>
+                </label>
+                
+                <!-- Don't Recommend Again Toggle -->
+                <label class="flex items-start gap-3 p-3 bg-netflix-gray rounded-lg cursor-pointer hover:bg-opacity-80 transition-colors">
+                    <input type="checkbox" id="toggle-block-items" class="toggle-checkbox mt-1">
+                    <div class="flex-1">
+                        <span class="text-white font-medium block">Don't Recommend Again</span>
+                        <span class="text-gray-400 text-sm">Hide items you're not interested in</span>
+                    </div>
+                </label>
+                
+                <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 mt-6">Profile & Stats</h3>
+                
+                <!-- Show Activity Charts Toggle -->
+                <label class="flex items-start gap-3 p-3 bg-netflix-gray rounded-lg cursor-pointer hover:bg-opacity-80 transition-colors">
+                    <input type="checkbox" id="toggle-activity-charts" class="toggle-checkbox mt-1">
+                    <div class="flex-1">
+                        <span class="text-white font-medium block">Show Activity Charts</span>
+                        <span class="text-gray-400 text-sm">Display taste profile and browsing charts</span>
+                    </div>
+                </label>
+                
+                <!-- Show Watchlist Status Toggle -->
+                <label class="flex items-start gap-3 p-3 bg-netflix-gray rounded-lg cursor-pointer hover:bg-opacity-80 transition-colors">
+                    <input type="checkbox" id="toggle-watchlist-status" class="toggle-checkbox mt-1">
+                    <div class="flex-1">
+                        <span class="text-white font-medium block">Show Watchlist Status</span>
+                        <span class="text-gray-400 text-sm">Display will/won't watch badges on history</span>
+                    </div>
+                </label>
+            </div>
+            
+            <!-- Blocked Items Section (shown when toggle is enabled) -->
+            <div id="blocked-items-section" class="mt-6 hidden">
+                <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Hidden Items</h3>
+                <div id="blocked-items-list" class="space-y-2 max-h-40 overflow-y-auto">
+                    <p class="text-gray-500 text-sm">No items hidden yet</p>
+                </div>
+                <button id="clear-blocked-items" class="mt-3 text-xs text-red-400 hover:text-red-300 transition-colors hidden">
+                    Clear all hidden items
+                </button>
+            </div>
+            
+            <!-- Footer -->
+            <div class="mt-8 pt-4 border-t border-gray-700">
+                <p class="text-xs text-gray-500 text-center">
+                    Settings are saved locally in your browser
+                </p>
+            </div>
+        </div>
+    </aside>
 
     <!-- Main Content -->
     <main class="max-w-6xl mx-auto px-4 py-8 flex-1">
@@ -57,11 +187,11 @@
         <!-- Page Header -->
         <div class="text-center mb-10">
             <h2 class="text-3xl font-bold text-white mb-4 flex items-center justify-center gap-3">
-                <i data-lucide="history" class="w-8 h-8 text-netflix-red"></i>
-                Your Click History
+                <i data-lucide="user-circle" class="w-8 h-8 text-netflix-red"></i>
+                My Profile & Stats
             </h2>
             <p class="text-gray-400 text-lg max-w-2xl mx-auto">
-                Shows you've clicked on. These help improve your recommendations.
+                Your viewing preferences and activity. All data stays private on your device.
             </p>
         </div>
 
@@ -85,14 +215,32 @@
             </div>
         </section>
 
-        <!-- Genre Breakdown -->
-        <section id="genre-breakdown" class="mb-10 bg-netflix-gray rounded-xl p-6 hidden">
-            <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <i data-lucide="pie-chart" class="w-5 h-5 text-netflix-red"></i>
-                Genre Breakdown
-            </h3>
-            <div id="genre-bars" class="space-y-3">
-                <!-- Populated by JS -->
+        <!-- Charts Section -->
+        <section id="charts-section" class="mb-10 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Genre Radar Chart (Taste Profile) -->
+                <div class="bg-netflix-gray rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <i data-lucide="radar" class="w-5 h-5 text-netflix-red"></i>
+                        Your Taste Profile
+                    </h3>
+                    <div class="chart-container" style="position: relative; height: 280px;">
+                        <canvas id="genre-radar-chart"></canvas>
+                    </div>
+                    <p class="text-gray-500 text-xs mt-3 text-center">Based on genres you've explored</p>
+                </div>
+                
+                <!-- Activity Bar Chart (Browsing Patterns) -->
+                <div class="bg-netflix-gray rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <i data-lucide="bar-chart-3" class="w-5 h-5 text-netflix-red"></i>
+                        Browsing Activity
+                    </h3>
+                    <div class="chart-container" style="position: relative; height: 280px;">
+                        <canvas id="activity-bar-chart"></canvas>
+                    </div>
+                    <p class="text-gray-500 text-xs mt-3 text-center">When you explore recommendations</p>
+                </div>
             </div>
         </section>
 
@@ -109,14 +257,31 @@
                 </button>
             </div>
             
-            <div id="history-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div id="history-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 <!-- Populated by JS -->
+            </div>
+            
+            <!-- Pagination Controls -->
+            <div id="pagination-controls" class="flex items-center justify-center gap-4 mt-8 hidden">
+                <button id="prev-page-btn" class="px-4 py-2 bg-netflix-gray hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                    Previous
+                </button>
+                <div class="flex items-center gap-2">
+                    <span id="current-page" class="text-white font-medium">1</span>
+                    <span class="text-gray-500">/</span>
+                    <span id="total-pages" class="text-gray-400">1</span>
+                </div>
+                <button id="next-page-btn" class="px-4 py-2 bg-netflix-gray hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2">
+                    Next
+                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </button>
             </div>
             
             <div id="empty-history" class="hidden text-center py-16">
                 <i data-lucide="inbox" class="w-16 h-16 text-gray-600 mx-auto mb-4"></i>
-                <p class="text-gray-400 text-lg">No click history yet</p>
-                <p class="text-gray-500 text-sm mt-2">Click on recommendations to start building your history</p>
+                <p class="text-gray-400 text-lg">No activity yet</p>
+                <p class="text-gray-500 text-sm mt-2">Click on recommendations to start building your profile</p>
                 <a href="index.html" class="netflix-btn mt-6 inline-flex">
                     <i data-lucide="sparkles" class="w-4 h-4 mr-2"></i>
                     View Recommendations
@@ -125,6 +290,78 @@
         </section>
 
     </main>
+
+    <!-- Detail Modal -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4"></div>
+    <div id="detail-modal" class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-netflix-dark rounded-xl z-50 hidden overflow-hidden max-h-[90vh]">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-4 border-b border-gray-700">
+            <h3 id="modal-title" class="text-xl font-bold text-white truncate pr-4">Show Title</h3>
+            <button id="modal-close-btn" class="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0">
+                <i data-lucide="x" class="w-6 h-6 text-gray-400"></i>
+            </button>
+        </div>
+        
+        <!-- Modal Content -->
+        <div class="overflow-y-auto p-6 max-h-[calc(90vh-60px)]">
+            <div class="flex flex-col sm:flex-row gap-6">
+                <!-- Poster -->
+                <div class="flex-shrink-0 mx-auto sm:mx-0">
+                    <img id="modal-poster" src="" alt="" class="w-40 sm:w-44 rounded-lg shadow-lg">
+                </div>
+                
+                <!-- Info -->
+                <div class="flex-1 min-w-0">
+                    <!-- Meta info -->
+                    <div id="modal-meta" class="flex flex-wrap items-center gap-2 text-gray-300 mb-3 text-sm">
+                        <!-- Populated by JS -->
+                    </div>
+                    
+                    <!-- Type badge -->
+                    <span id="modal-type" class="inline-block px-3 py-1 bg-netflix-red/20 text-netflix-red rounded-full text-xs mb-3">TV Show</span>
+                    
+                    <!-- Genres -->
+                    <p id="modal-genres" class="text-gray-400 text-sm mb-3"></p>
+                    
+                    <!-- Description -->
+                    <p id="modal-description" class="text-gray-300 text-sm leading-relaxed"></p>
+                </div>
+            </div>
+            
+            <!-- Director & Cast (collapsible info) -->
+            <div class="mt-4 pt-4 border-t border-gray-700 text-sm">
+                <div id="modal-director-section" class="mb-2 hidden">
+                    <span class="text-gray-500">Director: </span>
+                    <span id="modal-director" class="text-gray-300"></span>
+                </div>
+                <div id="modal-cast-section" class="hidden">
+                    <span class="text-gray-500">Cast: </span>
+                    <span id="modal-cast" class="text-gray-300"></span>
+                </div>
+            </div>
+            
+            <!-- Why Recommended Section -->
+            <div id="modal-why-section" class="mt-4 p-4 bg-netflix-gray rounded-lg hidden">
+                <h4 class="text-white font-semibold mb-2 flex items-center gap-2 text-sm">
+                    <i data-lucide="lightbulb" class="w-4 h-4 text-yellow-500"></i>
+                    Why We Recommended This
+                </h4>
+                <p id="modal-why-text" class="text-gray-400 text-sm"></p>
+            </div>
+            
+            <!-- Watchlist Actions -->
+            <div id="modal-watchlist-section" class="mt-4 flex gap-3 hidden">
+                <button id="will-watch-btn" class="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors inline-flex items-center justify-center gap-2 text-sm">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    Will Watch
+                </button>
+                <button id="wont-watch-btn" class="flex-1 px-4 py-2.5 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors inline-flex items-center justify-center gap-2 text-sm">
+                    <i data-lucide="x-circle" class="w-4 h-4"></i>
+                    Won't Watch
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="bg-netflix-dark py-6 px-4 mt-auto">
@@ -141,10 +378,44 @@
         </div>
     </footer>
 
+    <!-- JavaScript Dependencies -->
+    <script src="js/api.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/modal.js"></script>
+    
     <!-- History Page Script -->
     <script>
         const HISTORY_KEY = 'netflix_click_history';
         
+        // Pagination state
+        let currentPage = 1;
+        const itemsPerPage = 12;
+        let totalPages = 1;
+        
+        // Chart instances
+        let radarChart = null;
+        let barChart = null;
+        
+        // =========================================
+        // Settings Helper
+        // =========================================
+        function getSettings() {
+            // Use Settings module if available, otherwise return defaults
+            if (window.Settings && window.Settings.get) {
+                return window.Settings.get();
+            }
+            return {
+                showActivityCharts: true,
+                showWatchlistStatus: true,
+                enableWatchlist: false,
+                showWhyRecommended: false,
+                showMoreDetails: false
+            };
+        }
+        
+        // =========================================
+        // History Data Functions
+        // =========================================
         function getClickHistory() {
             try {
                 const stored = localStorage.getItem(HISTORY_KEY);
@@ -156,19 +427,20 @@
         }
         
         function clearHistory() {
-            if (confirm('Are you sure you want to clear your click history? This cannot be undone.')) {
+            if (confirm('Are you sure you want to clear your history? This cannot be undone.')) {
                 localStorage.removeItem(HISTORY_KEY);
-                renderHistory();
+                currentPage = 1;
+                renderAll();
             }
         }
         
+        // =========================================
+        // Statistics Calculation
+        // =========================================
         function calculateStats(history) {
             if (history.length === 0) return null;
             
-            // Total clicks (sum of all click counts)
             const totalClicks = history.reduce((sum, item) => sum + (item.clickCount || 1), 0);
-            
-            // Unique titles
             const uniqueTitles = history.length;
             
             // Genre analysis
@@ -187,11 +459,25 @@
             const genres = Object.entries(genreCounts).sort((a, b) => b[1] - a[1]);
             const topGenre = genres.length > 0 ? genres[0][0] : '-';
             
-            // Genre diversity (number of unique genres / potential max)
             const uniqueGenres = Object.keys(genreCounts).length;
             const diversityScore = uniqueGenres >= 10 ? 'Very Open' : 
                                    uniqueGenres >= 6 ? 'Open' : 
                                    uniqueGenres >= 3 ? 'Moderate' : 'Focused';
+            
+            // Activity by day of week
+            const dayOfWeekCounts = [0, 0, 0, 0, 0, 0, 0]; // Sun-Sat
+            history.forEach(item => {
+                if (item.clickedAt) {
+                    try {
+                        const day = new Date(item.clickedAt).getDay();
+                        dayOfWeekCounts[day] += (item.clickCount || 1);
+                    } catch (e) {}
+                }
+            });
+            
+            // Watchlist stats
+            const willWatchCount = history.filter(h => h.status === 'will_watch').length;
+            const wontWatchCount = history.filter(h => h.status === 'wont_watch').length;
             
             return {
                 totalClicks,
@@ -199,7 +485,10 @@
                 topGenre,
                 diversityScore,
                 genres,
-                uniqueGenres
+                uniqueGenres,
+                dayOfWeekCounts,
+                willWatchCount,
+                wontWatchCount
             };
         }
         
@@ -208,79 +497,305 @@
             document.getElementById('stat-unique').textContent = stats ? stats.uniqueTitles : 0;
             document.getElementById('stat-top-genre').textContent = stats ? stats.topGenre : '-';
             document.getElementById('stat-diversity').textContent = stats ? stats.diversityScore : '-';
-            
-            // Genre breakdown
-            const genreSection = document.getElementById('genre-breakdown');
-            const genreBars = document.getElementById('genre-bars');
-            
-            if (stats && stats.genres.length > 0) {
-                genreSection.classList.remove('hidden');
-                const maxCount = stats.genres[0][1];
-                
-                genreBars.innerHTML = stats.genres.slice(0, 8).map(([genre, count]) => {
-                    const percentage = Math.round((count / maxCount) * 100);
-                    return `
-                        <div class="flex items-center gap-3">
-                            <span class="text-gray-300 text-sm w-32 truncate">${genre}</span>
-                            <div class="flex-1 bg-netflix-black rounded-full h-3 overflow-hidden">
-                                <div class="bg-netflix-red h-full rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
-                            </div>
-                            <span class="text-gray-400 text-sm w-8 text-right">${count}</span>
-                        </div>
-                    `;
-                }).join('');
-            } else {
-                genreSection.classList.add('hidden');
-            }
         }
         
+        // =========================================
+        // Chart.js Visualizations
+        // =========================================
+        function renderCharts(stats) {
+            const settings = getSettings();
+            const chartsSection = document.getElementById('charts-section');
+            
+            if (!stats || !settings.showActivityCharts || stats.genres.length === 0) {
+                chartsSection.classList.add('hidden');
+                return;
+            }
+            
+            chartsSection.classList.remove('hidden');
+            
+            // Render Genre Radar Chart
+            renderGenreRadar(stats.genres);
+            
+            // Render Activity Bar Chart
+            renderActivityBar(stats.dayOfWeekCounts);
+        }
+        
+        function renderGenreRadar(genres) {
+            const ctx = document.getElementById('genre-radar-chart');
+            if (!ctx) return;
+            
+            // Destroy existing chart
+            if (radarChart) {
+                radarChart.destroy();
+            }
+            
+            // Take top 8 genres for the radar
+            const topGenres = genres.slice(0, 8);
+            const labels = topGenres.map(g => g[0]);
+            const data = topGenres.map(g => g[1]);
+            const maxVal = Math.max(...data);
+            
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Genre Interest',
+                        data: data,
+                        backgroundColor: 'rgba(229, 9, 20, 0.2)',
+                        borderColor: '#e50914',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#e50914',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#e50914'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: maxVal,
+                            ticks: {
+                                display: false
+                            },
+                            grid: {
+                                color: '#333333'
+                            },
+                            angleLines: {
+                                color: '#333333'
+                            },
+                            pointLabels: {
+                                color: '#9ca3af',
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function renderActivityBar(dayOfWeekCounts) {
+            const ctx = document.getElementById('activity-bar-chart');
+            if (!ctx) return;
+            
+            // Destroy existing chart
+            if (barChart) {
+                barChart.destroy();
+            }
+            
+            const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            
+            barChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Activity',
+                        data: dayOfWeekCounts,
+                        backgroundColor: 'rgba(229, 9, 20, 0.7)',
+                        borderColor: '#e50914',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: '#333333'
+                            },
+                            ticks: {
+                                color: '#9ca3af'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#333333'
+                            },
+                            ticks: {
+                                color: '#9ca3af',
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // =========================================
+        // History Grid Rendering with Pagination
+        // =========================================
         function renderHistory() {
             const history = getClickHistory();
             const container = document.getElementById('history-container');
             const emptyState = document.getElementById('empty-history');
+            const paginationControls = document.getElementById('pagination-controls');
+            const settings = getSettings();
             
             if (history.length === 0) {
                 container.innerHTML = '';
                 emptyState.classList.remove('hidden');
+                paginationControls.classList.add('hidden');
                 renderStats(null);
+                renderCharts(null);
                 lucide.createIcons();
                 return;
             }
             
             emptyState.classList.add('hidden');
             
-            // Calculate and render stats
+            // Calculate stats
             const stats = calculateStats(history);
             renderStats(stats);
+            renderCharts(stats);
             
-            // Render history items
-            container.innerHTML = history.map(item => `
-                <div class="bg-netflix-gray rounded-lg overflow-hidden group">
-                    <div class="relative aspect-[2/3]">
-                        <img 
-                            src="${item.img || ''}" 
-                            alt="${item.name || ''}" 
-                            class="w-full h-full object-cover"
-                            onerror="this.src='https://via.placeholder.com/300x450?text=No+Image'"
-                            loading="lazy"
-                        />
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
-                        ${item.clickCount > 1 ? `
-                            <div class="absolute top-2 right-2 bg-netflix-red text-white text-xs px-2 py-1 rounded-full">
-                                ${item.clickCount}x
+            // Pagination
+            totalPages = Math.max(1, Math.ceil(history.length / itemsPerPage));
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+            
+            const startIdx = (currentPage - 1) * itemsPerPage;
+            const endIdx = startIdx + itemsPerPage;
+            const pageItems = history.slice(startIdx, endIdx);
+            
+            // Render items with status badges
+            container.innerHTML = pageItems.map(item => {
+                const statusBadge = getStatusBadge(item.status, settings.showWatchlistStatus);
+                const clickCountBadge = item.clickCount > 1 
+                    ? `<div class="absolute top-2 right-2 bg-netflix-red text-white text-xs px-2 py-1 rounded-full z-10">${item.clickCount}x</div>` 
+                    : '';
+                
+                return `
+                    <div class="history-card bg-netflix-gray rounded-lg overflow-hidden group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-xl hover:z-10" 
+                         data-item-id="${item.id}">
+                        <div class="relative aspect-[2/3]">
+                            <img 
+                                src="${item.img || ''}" 
+                                alt="${item.name || ''}" 
+                                class="w-full h-full object-cover"
+                                onerror="this.src='https://via.placeholder.com/300x450?text=No+Image'"
+                                loading="lazy"
+                            />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+                            ${statusBadge}
+                            ${clickCountBadge}
+                            <div class="absolute bottom-0 left-0 right-0 p-3">
+                                <h4 class="text-white font-medium text-sm line-clamp-2">${item.name || 'Unknown'}</h4>
+                                <p class="text-gray-400 text-xs mt-1">${formatDate(item.clickedAt)}</p>
                             </div>
-                        ` : ''}
-                        <div class="absolute bottom-0 left-0 right-0 p-3">
-                            <h4 class="text-white font-medium text-sm line-clamp-2">${item.name || 'Unknown'}</h4>
-                            <p class="text-gray-400 text-xs mt-1">${formatDate(item.clickedAt)}</p>
+                            <!-- Hover overlay -->
+                            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span class="px-4 py-2 bg-white text-black rounded-lg font-medium text-sm flex items-center gap-2">
+                                    <i data-lucide="info" class="w-4 h-4"></i>
+                                    View Details
+                                </span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
+            
+            // Update pagination UI
+            updatePaginationUI();
+            
+            // Add click handlers to cards
+            setupCardClickHandlers();
             
             lucide.createIcons();
         }
         
+        function getStatusBadge(status, showStatus) {
+            if (!showStatus || !status) return '';
+            
+            if (status === 'will_watch') {
+                return `
+                    <div class="absolute top-2 left-2 bg-green-600 text-white rounded-full p-1.5 z-10" title="Will Watch">
+                        <i data-lucide="check" class="w-3 h-3"></i>
+                    </div>
+                `;
+            } else if (status === 'wont_watch') {
+                return `
+                    <div class="absolute inset-0 bg-black/50 z-[5]"></div>
+                    <div class="absolute top-2 left-2 bg-gray-600 text-white rounded-full p-1.5 z-10" title="Won't Watch">
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </div>
+                `;
+            }
+            return '';
+        }
+        
+        function setupCardClickHandlers() {
+            const cards = document.querySelectorAll('.history-card');
+            const history = getClickHistory();
+            
+            cards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const itemId = card.dataset.itemId;
+                    const item = history.find(h => String(h.id) === String(itemId));
+                    if (item && window.Modal) {
+                        Modal.open(item);
+                        setTimeout(() => lucide.createIcons(), 50);
+                    }
+                });
+            });
+        }
+        
+        function updatePaginationUI() {
+            const paginationControls = document.getElementById('pagination-controls');
+            const currentPageEl = document.getElementById('current-page');
+            const totalPagesEl = document.getElementById('total-pages');
+            const prevBtn = document.getElementById('prev-page-btn');
+            const nextBtn = document.getElementById('next-page-btn');
+            
+            if (totalPages <= 1) {
+                paginationControls.classList.add('hidden');
+                return;
+            }
+            
+            paginationControls.classList.remove('hidden');
+            
+            if (currentPageEl) currentPageEl.textContent = currentPage;
+            if (totalPagesEl) totalPagesEl.textContent = totalPages;
+            
+            if (prevBtn) prevBtn.disabled = currentPage <= 1;
+            if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+        }
+        
+        function goToPrevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderHistory();
+            }
+        }
+        
+        function goToNextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderHistory();
+            }
+        }
+        
+        // =========================================
+        // Utility Functions
+        // =========================================
         function formatDate(dateString) {
             try {
                 const date = new Date(dateString);
@@ -301,11 +816,61 @@
             }
         }
         
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        function renderAll() {
             renderHistory();
+        }
+        
+        // =========================================
+        // Load User Info
+        // =========================================
+        async function loadUserInfo() {
+            try {
+                if (window.NetflixAPI && window.NetflixAPI.getUser) {
+                    const user = await NetflixAPI.getUser();
+                    if (window.Settings && user && user.email) {
+                        Settings.updateUserDisplay(user.email);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load user info:', error);
+            }
+        }
+        
+        // =========================================
+        // Initialization
+        // =========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize settings (for toggle states on this page)
+            if (window.Settings) {
+                Settings.init();
+                Settings.setupListeners();
+            }
             
+            // Initialize modal
+            if (window.Modal) {
+                Modal.setupListeners();
+            }
+            
+            // Load user info
+            loadUserInfo();
+            
+            // Render everything
+            renderAll();
+            
+            // Event listeners
             document.getElementById('clear-history-btn')?.addEventListener('click', clearHistory);
+            document.getElementById('prev-page-btn')?.addEventListener('click', goToPrevPage);
+            document.getElementById('next-page-btn')?.addEventListener('click', goToNextPage);
+            
+            // Listen for watchlist status changes to re-render
+            window.addEventListener('watchlistStatusChanged', () => {
+                renderHistory();
+            });
+            
+            // Listen for settings changes
+            window.addEventListener('settingsChanged', () => {
+                renderHistory();
+            });
             
             lucide.createIcons();
         });

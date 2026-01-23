@@ -42,8 +42,8 @@
             </div>
             <div class="flex items-center gap-4">
                 <span class="text-sm text-gray-400 hidden sm:block">Powered by SyftBox</span>
-                <a href="history.html" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Click History">
-                    <i data-lucide="history" class="w-6 h-6"></i>
+                <a href="history.html" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="My Profile & Stats">
+                    <i data-lucide="user-circle" class="w-6 h-6"></i>
                 </a>
                 <button id="settings-btn" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Settings">
                     <i data-lucide="settings" class="w-6 h-6"></i>
@@ -134,6 +134,26 @@
                     <div class="flex-1">
                         <span class="text-white font-medium block">Don't Recommend Again</span>
                         <span class="text-gray-400 text-sm">Hide items you're not interested in</span>
+                    </div>
+                </label>
+                
+                <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 mt-6">Profile & Stats</h3>
+                
+                <!-- Show Activity Charts Toggle -->
+                <label class="flex items-start gap-3 p-3 bg-netflix-gray rounded-lg cursor-pointer hover:bg-opacity-80 transition-colors">
+                    <input type="checkbox" id="toggle-activity-charts" class="toggle-checkbox mt-1">
+                    <div class="flex-1">
+                        <span class="text-white font-medium block">Show Activity Charts</span>
+                        <span class="text-gray-400 text-sm">Display taste profile and browsing charts</span>
+                    </div>
+                </label>
+                
+                <!-- Show Watchlist Status Toggle -->
+                <label class="flex items-start gap-3 p-3 bg-netflix-gray rounded-lg cursor-pointer hover:bg-opacity-80 transition-colors">
+                    <input type="checkbox" id="toggle-watchlist-status" class="toggle-checkbox mt-1">
+                    <div class="flex-1">
+                        <span class="text-white font-medium block">Show Watchlist Status</span>
+                        <span class="text-gray-400 text-sm">Display will/won't watch badges on history</span>
                     </div>
                 </label>
             </div>

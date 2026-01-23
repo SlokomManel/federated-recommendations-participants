@@ -184,6 +184,29 @@ function populateModalContent(item, settings) {
 }
 
 /**
+ * Update click history with watchlist status
+ * @param {string} itemId - The item ID
+ * @param {string} status - 'will_watch' or 'wont_watch'
+ */
+function updateClickHistoryStatus(itemId, status) {
+    try {
+        const history = JSON.parse(localStorage.getItem('netflix_click_history') || '[]');
+        const idx = history.findIndex(h => h.id === itemId);
+        if (idx >= 0) {
+            history[idx].status = status;
+            history[idx].statusUpdatedAt = new Date().toISOString();
+            localStorage.setItem('netflix_click_history', JSON.stringify(history));
+            // Dispatch event for UI updates
+            window.dispatchEvent(new CustomEvent('watchlistStatusChanged', { 
+                detail: { id: itemId, status } 
+            }));
+        }
+    } catch (error) {
+        console.error('Error updating click history status:', error);
+    }
+}
+
+/**
  * Handle "Will Watch" button click
  */
 async function handleWillWatch() {
@@ -204,6 +227,10 @@ async function handleWillWatch() {
             page,
             visibleItems
         );
+        
+        // Update localStorage click history with status
+        updateClickHistoryStatus(currentModalItem.id, 'will_watch');
+        
         showModalToast('Added to your watchlist!', 'success');
         closeModal();
     } catch (error) {
@@ -233,6 +260,10 @@ async function handleWontWatch() {
             page,
             visibleItems
         );
+        
+        // Update localStorage click history with status
+        updateClickHistoryStatus(currentModalItem.id, 'wont_watch');
+        
         showModalToast('Marked as not interested.', 'success');
         closeModal();
     } catch (error) {
@@ -300,5 +331,6 @@ window.Modal = {
     open: openModal,
     close: closeModal,
     setupListeners: setupModalListeners,
-    getCurrentItem: () => currentModalItem
+    getCurrentItem: () => currentModalItem,
+    updateClickHistoryStatus: updateClickHistoryStatus
 };
