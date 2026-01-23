@@ -24,19 +24,6 @@ This participant handles:
 uv run python app.py
 ```
 
-## Structure
-
-```
-├── app.py               # FastAPI entry point + application
-├── fetcher/             # Netflix data fetcher (Selenium)
-├── loaders/             # Data loading utilities
-├── participant_utils/   # SyftBox helpers
-├── federated_learning/  # Participant-side FL (fine-tuning, recommendations)
-├── recommender/         # Local recommendation generation
-├── ui/                  # Web UI (HTML, CSS, JS)
-└── data/                # Netflix titles and demo data
-```
-
 ## How It Works
 
 1. Fetches/loads Netflix viewing history
