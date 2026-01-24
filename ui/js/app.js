@@ -252,8 +252,15 @@ async function loadAndDisplayRecommendations() {
             return;
         }
         
-        AppState.rawRecommendations = data.raw_recommendations || [];
-        AppState.rerankedRecommendations = data.reranked_recommendations || [];
+        // Attach stable 1-based rank based on full list ordering (pre-filters)
+        AppState.rawRecommendations = (data.raw_recommendations || []).map((item, idx) => ({
+            ...item,
+            rank: idx + 1
+        }));
+        AppState.rerankedRecommendations = (data.reranked_recommendations || []).map((item, idx) => ({
+            ...item,
+            rank: idx + 1
+        }));
         AppState.userEmail = data.user_email || AppState.userEmail;
         AppState.status = 'ready';
         
@@ -753,11 +760,12 @@ async function submitChoiceForItem(item) {
         const settings = Settings.get();
         const column = settings.useReranked ? 2 : 1;
         const page = AppState.currentPage;
+        const rank = (typeof item.rank === 'number' && !Number.isNaN(item.rank)) ? item.rank : null;
         
         // Get currently visible items on screen
         const visibleItems = getCurrentPageItems().map(i => i.name);
         
-        await NetflixAPI.submitChoice(item.id, column, page, visibleItems);
+        await NetflixAPI.submitChoice(item.id, column, rank, page, visibleItems);
     } catch (error) {
         console.error('Submit choice error:', error);
     }

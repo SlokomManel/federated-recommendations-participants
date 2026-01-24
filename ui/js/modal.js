@@ -65,7 +65,15 @@ function populateModalContent(item, settings) {
     
     // Title
     const titleEl = document.getElementById('modal-title');
-    if (titleEl) titleEl.textContent = item.name || 'Unknown Title';
+    if (titleEl) {
+        const hasRank = typeof item.rank === 'number' && !Number.isNaN(item.rank);
+        // When "view details" is enabled, show rank in the modal header (e.g., "#44 Title")
+        if (settings.showMoreDetails && hasRank) {
+            titleEl.textContent = `#${item.rank} ${item.name || 'Unknown Title'}`;
+        } else {
+            titleEl.textContent = item.name || 'Unknown Title';
+        }
+    }
     
     // Meta info (rating, year, content rating)
     const metaEl = document.getElementById('modal-meta');
@@ -218,12 +226,14 @@ async function handleWillWatch() {
         // Get current page and visible items from AppState (exposed globally)
         const page = window.AppState?.currentPage || 1;
         const visibleItems = window.getCurrentPageItems ? window.getCurrentPageItems().map(i => i.name) : [];
+        const rank = (typeof currentModalItem.rank === 'number' && !Number.isNaN(currentModalItem.rank)) ? currentModalItem.rank : null;
         
         const result = await NetflixAPI.submitWatchlistAction(
             currentModalItem.id,
             currentModalItem.name,
             'will_watch',
             settings.useReranked,
+            rank,
             page,
             visibleItems
         );
@@ -251,12 +261,14 @@ async function handleWontWatch() {
         // Get current page and visible items from AppState (exposed globally)
         const page = window.AppState?.currentPage || 1;
         const visibleItems = window.getCurrentPageItems ? window.getCurrentPageItems().map(i => i.name) : [];
+        const rank = (typeof currentModalItem.rank === 'number' && !Number.isNaN(currentModalItem.rank)) ? currentModalItem.rank : null;
         
         const result = await NetflixAPI.submitWatchlistAction(
             currentModalItem.id,
             currentModalItem.name,
             'wont_watch',
             settings.useReranked,
+            rank,
             page,
             visibleItems
         );

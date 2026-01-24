@@ -279,6 +279,7 @@ async def api_watchlist(data: dict):
         title = data.get("title", "")
         action = data.get("action", "")
         use_reranked = data.get("useReranked", False)
+        rank = data.get("rank", None)
         page = data.get("page", 1)
         visible_items = data.get("visible_items", [])
         
@@ -291,7 +292,7 @@ async def api_watchlist(data: dict):
         timestamp = datetime.now().isoformat()
         item_from_column = "Re-ranked" if use_reranked else "Unprocessed"
         
-        row = [timestamp, client.email, page, visible_items, item_from_column, title, action]
+        row = [timestamp, client.email, rank, page, visible_items, item_from_column, title, action]
         
         # NOTE: Do NOT write into the aggregator's `shared/` folder, since that is publicly readable.
         # Instead write into our own restricted app_data folder with permissions granting the aggregator read access.
@@ -299,7 +300,7 @@ async def api_watchlist(data: dict):
         csv_file_path = restricted_public_folder / "interaction_logs" / "recommendations.csv"
         _ensure_csv_has_header(
             csv_file_path,
-            ["timestamp", "user", "page", "visible_items", "column", "title", "action"],
+            ["timestamp", "user", "rank", "page", "visible_items", "column", "title", "action"],
         )
         
         with open(csv_file_path, "a", newline='', encoding="utf-8") as f:
@@ -340,6 +341,7 @@ async def api_choice(data: dict):
         timestamp = datetime.now().isoformat()
         
         page = data.get('page', 1)
+        rank = data.get("rank", None)
         visible_items = data.get('visible_items', [])
         
         if data.get('column') == 1:
@@ -350,17 +352,17 @@ async def api_choice(data: dict):
             title = next((item["name"] for item in reranked_recommends if item["id"] == data.get('id')), None)
 
         # Keep a consistent schema with `/watchlist` rows by filling `action`.
-        row = [timestamp, client.email, page, visible_items, column, title, "clicked"]
+        row = [timestamp, client.email, rank, page, visible_items, column, title, "clicked"]
 
         # Store privately (restricted to aggregator-read) instead of publishing to aggregator shared.
         _, restricted_public_folder, _ = setup_environment("profile_0")
         csv_file_path = restricted_public_folder / "interaction_logs" / "recommendations.csv"
         _ensure_csv_has_header(
             csv_file_path,
-            ["timestamp", "user", "page", "visible_items", "column", "title", "action"],
+            ["timestamp", "user", "rank", "page", "visible_items", "column", "title", "action"],
         )
 
-        logging.info(f"Recording choice: {title} from {column} (page {page})")
+        logging.info(f"Recording choice: {title} from {column} (rank {rank}, page {page})")
         with open(csv_file_path, "a", newline='', encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(row)

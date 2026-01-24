@@ -68,17 +68,18 @@ async function uploadHistory(file) {
  * Submit user's choice/feedback
  * @param {number} id - The ID of the chosen item
  * @param {number} column - Which column (1 = raw, 2 = reranked)
+ * @param {number|null} rank - 1-based rank in the full list (pre-filters)
  * @param {number} page - Current page number
  * @param {Array} visibleItems - List of item names currently visible on screen
  * @returns {Promise<Object>} Server response
  */
-async function submitChoice(id, column, page = 1, visibleItems = []) {
+async function submitChoice(id, column, rank = null, page = 1, visibleItems = []) {
     const response = await fetch(`${API_BASE_URL}/api/choice`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ id, column, page, visible_items: visibleItems })
+        body: JSON.stringify({ id, column, rank, page, visible_items: visibleItems })
     });
     if (!response.ok) {
         throw new Error(`Failed to submit choice: ${response.statusText}`);
@@ -104,17 +105,18 @@ async function healthCheck() {
  * @param {string} title - The title of the item
  * @param {string} action - Either "will_watch" or "wont_watch"
  * @param {boolean} useReranked - Whether user is viewing re-ranked list
+ * @param {number|null} rank - 1-based rank in the full list (pre-filters)
  * @param {number} page - Current page number
  * @param {Array} visibleItems - List of item names currently visible on screen
  * @returns {Promise<Object>} Server response
  */
-async function submitWatchlistAction(id, title, action, useReranked = false, page = 1, visibleItems = []) {
+async function submitWatchlistAction(id, title, action, useReranked = false, rank = null, page = 1, visibleItems = []) {
     const response = await fetch(`${API_BASE_URL}/api/watchlist`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ id, title, action, useReranked, page, visible_items: visibleItems })
+        body: JSON.stringify({ id, title, action, useReranked, rank, page, visible_items: visibleItems })
     });
     if (!response.ok) {
         throw new Error(`Failed to submit watchlist action: ${response.statusText}`);
