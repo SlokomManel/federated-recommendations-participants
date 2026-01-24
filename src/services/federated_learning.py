@@ -111,7 +111,7 @@ def prepare_participant_data(
     # Augment viewing history with click history (clicked items = implicit watches)
     if click_history and len(click_history) > 0:
         logging.info(f"Augmenting viewing history with {len(click_history)} clicked items...")
-        click_entries = []
+        click_entries = []        
         for click in click_history:
             name = click.get('name', '')
             if name:
@@ -123,7 +123,10 @@ def prepare_participant_data(
             click_array = np.array(click_entries)
             viewing_history = np.vstack([viewing_history, click_array])
             logging.info(f"Added {len(click_entries)} click entries to viewing history.")
-    
+
+        logging.info(f"click entries: {click_entries}")
+        logging.info(f"viewing history: {viewing_history}")
+
     # Create sequence data
     sequence_recommender = SequenceData(viewing_history)
     logging.debug("Sequence data created from viewing history.")

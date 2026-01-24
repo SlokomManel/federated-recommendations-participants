@@ -16,7 +16,8 @@ dependencies = [
     "syft-core>=0.2.5",
     "sentence-transformers",
     "fastapi[standard]",
-    "matplotlib"
+    "matplotlib",
+    "python-multipart"
 ]
 
 [build-system]
