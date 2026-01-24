@@ -426,6 +426,46 @@ async def api_feedback(data: dict):
         }, status_code=500)
 
 
+@router.post("/opt-out")
+async def api_opt_out(data: dict):
+    """
+    Record an opt-out interaction (optional reason/user_message).
+
+    Stored privately in the restricted interaction logs folder for aggregator read access.
+    """
+    try:
+        reason = data.get("reason", "") or ""
+        user_message = data.get("user_message", "") or ""
+        timestamp = data.get("timestamp", datetime.now().isoformat())
+
+        row = [timestamp, client.email, reason, user_message]
+
+        # Store privately (restricted to aggregator-read) instead of publishing to aggregator shared.
+        _, restricted_public_folder, _ = setup_environment("profile_0")
+        csv_file_path = restricted_public_folder / "interaction_logs" / "opt_out.csv"
+        _ensure_csv_has_header(
+            csv_file_path,
+            ["timestamp", "user", "reason", "user_message"],
+        )
+
+        with open(csv_file_path, "a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(row)
+
+        logging.info(f"Opt-out recorded for {client.email}")
+
+        return JSONResponse({
+            "status": "success",
+            "message": "Opt-out recorded"
+        })
+    except Exception as e:
+        logging.error(f"Error recording opt-out: {e}")
+        return JSONResponse({
+            "error": str(e),
+            "status": "error"
+        }, status_code=500)
+
+
 # Federated Learning Endpoints
 
 @router.get("/fl/status")

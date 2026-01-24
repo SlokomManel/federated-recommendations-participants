@@ -149,6 +149,27 @@ async function getFLStatus() {
 }
 
 /**
+ * Submit opt-out interaction log (reason + optional user message).
+ * @param {string} reason - Selected reason label (optional)
+ * @param {string} userMessage - Optional freeform user message
+ * @param {string} timestamp - ISO timestamp
+ * @returns {Promise<Object>} Server response
+ */
+async function submitOptOut(reason = '', userMessage = '', timestamp = new Date().toISOString()) {
+    const response = await fetch(`${API_BASE_URL}/api/opt-out`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason, user_message: userMessage, timestamp })
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to submit opt-out: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+/**
  * Trigger full refresh (FL workflow: fine-tune model + compute recommendations)
  * This uses click history to augment training data before fine-tuning
  * @param {Array} clickHistory - Array of clicked items to enhance training
@@ -205,5 +226,6 @@ window.NetflixAPI = {
     healthCheck,
     submitWatchlistAction,
     getUser,
-    getFLStatus
+    getFLStatus,
+    submitOptOut
 };

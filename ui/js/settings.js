@@ -12,8 +12,8 @@ const DEFAULT_SETTINGS = {
     showWhyRecommended: false,   // Show "why recommended" in modal
     enableWatchlist: false,      // Enable will/won't watch buttons
     enableBlockItems: false,     // Enable "don't recommend again" feature
-    showActivityCharts: true,    // Show charts on profile page
-    showWatchlistStatus: true    // Show will/won't watch badges on history items
+    showActivityCharts: false,    // Show charts on profile page
+    showWatchlistStatus: false    // Show will/won't watch badges on history items
 };
 
 // Blocked items storage key
