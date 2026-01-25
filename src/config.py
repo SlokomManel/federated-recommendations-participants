@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
 
-APP_NAME = os.getenv("APP_NAME", "syftbox-netflix-bpr")
+APP_NAME = os.getenv("APP_NAME", "federated-recommendations")
 AGGREGATOR_DATASITE = os.getenv("AGGREGATOR_DATASITE")
 
 # Paths
