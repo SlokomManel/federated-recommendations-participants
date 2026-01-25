@@ -64,7 +64,7 @@ def enrich_recommendation(item):
     language = _sanitize_json_value(item.get("language", "N/A"), default_string="N/A")
     imdb = _sanitize_json_value(item.get("imdb", "N/A"), default_string="N/A")
     img = _sanitize_json_value(item.get("img", ""), default_string="")
-    
+
     # Start with existing data
     enriched = {
         "id": item.get("id"),

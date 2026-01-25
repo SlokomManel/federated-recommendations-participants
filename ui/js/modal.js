@@ -240,7 +240,7 @@ function populateModalContent(item, settings) {
             if (whyText) {
                 // Generate a simple explanation based on score
                 const score = item.raw_score || 0;
-                const percentage = Math.min(100, Math.round(score * 100));
+                const percentage = Math.min(100, Math.round(score * 10));
                 whyText.textContent = `This show has a ${percentage}% match score based on your viewing history and preferences. The recommendation is generated using federated learning from community patterns while keeping your data private.`;
             }
         } else {
