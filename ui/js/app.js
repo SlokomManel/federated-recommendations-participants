@@ -1102,7 +1102,7 @@ async function handleFileUpload(file) {
 }
 
 /**
- * Trigger refresh (full FL workflow)
+ * Trigger refresh (recompute recommendations using existing model - no fine-tuning)
  */
 async function triggerRefresh() {
     const btn = elements.refreshBtn();
@@ -1112,30 +1112,21 @@ async function triggerRefresh() {
     btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Refreshing...';
     
     try {
-        const clickHistory = getClickHistory();
-        const result = await NetflixAPI.triggerRefresh(clickHistory);
+        // Just recompute recommendations using existing model (no fine-tuning)
+        const result = await NetflixAPI.recomputeRecommendations();
         
-        // Check if the API returned a no_viewing_history status
-        if (result.status === 'no_viewing_history') {
+        if (result.status === 'already_computing') {
+            showToast('Computation is already in progress.', 'error');
             btn.disabled = false;
             btn.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh';
-            showUploadSection();
-            showToast('Please upload your Netflix viewing history first.', 'error');
             return;
         }
         
-        showLoading('Fine-tuning your personalized model...');
-        startFLPolling();
+        showLoading('Recomputing recommendations...');
+        startPolling();
     } catch (error) {
         console.error('Refresh error:', error);
-        
-        // Check if error indicates missing viewing history (using status property or message)
-        if (error.status === 'no_viewing_history' || (error.message && error.message.includes('no_viewing_history'))) {
-            showUploadSection();
-            showToast('Please upload your Netflix viewing history first.', 'error');
-        } else {
-            showToast('Failed to refresh. Please try again.', 'error');
-        }
+        showToast('Failed to refresh. Please try again.', 'error');
         
         btn.disabled = false;
         btn.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh';

@@ -179,7 +179,7 @@
              
                     <button id="opt-out-btn" class="w-full px-4 py-2 bg-red-900/20 hover:bg-red-900/30 text-red-300 rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
                         <i data-lucide="log-out" class="w-4 h-4"></i>
-                        Opt out of study
+                        Opt out
                     </button>
                 </div>
                 <p class="text-xs text-gray-500 text-center">
@@ -272,10 +272,16 @@
                     <i data-lucide="list" class="w-5 h-5"></i>
                     Recent Activity
                 </h3>
-                <button id="clear-history-btn" class="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg text-sm transition-colors flex items-center gap-2">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    Clear History
-                </button>
+                <div class="flex items-center gap-3">
+                    <button id="enhance-recommendations-btn" class="px-4 py-2 bg-green-600/20 hover:bg-green-600/40 text-green-400 rounded-lg text-sm transition-colors flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        Enhance Recommendations via History
+                    </button>
+                    <button id="clear-history-btn" class="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg text-sm transition-colors flex items-center gap-2">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        Clear History
+                    </button>
+                </div>
             </div>
             
             <div id="history-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -430,7 +436,7 @@
                     </button>
                     <button id="opt-out-submit" class="flex-1 px-4 py-2.5 bg-red-900 hover:bg-red-800 text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2">
                         <i data-lucide="log-out" class="w-4 h-4"></i>
-                        Opt out & delete local data
+                        Delete local data
                     </button>
                 </div>
 
@@ -774,11 +780,11 @@
             const endIdx = startIdx + itemsPerPage;
             const pageItems = history.slice(startIdx, endIdx);
             
-            // Render items with status badges
+            // Render items with status badges and delete button
             container.innerHTML = pageItems.map(item => {
                 const statusBadge = getStatusBadge(item.status, settings.showWatchlistStatus);
                 const clickCountBadge = item.clickCount > 1 
-                    ? `<div class="absolute top-2 right-2 bg-netflix-red text-white text-xs px-2 py-1 rounded-full z-10">${item.clickCount}x</div>` 
+                    ? `<div class="absolute top-10 right-2 bg-netflix-red text-white text-xs px-2 py-1 rounded-full z-10">${item.clickCount}x</div>` 
                     : '';
                 
                 return `
@@ -795,12 +801,19 @@
                             <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
                             ${statusBadge}
                             ${clickCountBadge}
+                            <!-- Delete button -->
+                            <button class="delete-history-item absolute top-2 right-2 w-7 h-7 bg-black/60 hover:bg-red-600 text-white rounded-full flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-opacity" 
+                                    data-item-id="${item.id}" 
+                                    data-item-name="${(item.name || '').replace(/"/g, '&quot;')}"
+                                    title="Remove from history">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
                             <div class="absolute bottom-0 left-0 right-0 p-3">
                                 <h4 class="text-white font-medium text-sm line-clamp-2">${item.name || 'Unknown'}</h4>
                                 <p class="text-gray-400 text-xs mt-1">${formatDate(item.clickedAt)}</p>
                             </div>
                             <!-- Hover overlay -->
-                            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                                 <span class="px-4 py-2 bg-white text-black rounded-lg font-medium text-sm flex items-center gap-2">
                                     <i data-lucide="info" class="w-4 h-4"></i>
                                     View Details
@@ -845,7 +858,10 @@
             const history = getClickHistory();
             
             cards.forEach(card => {
-                card.addEventListener('click', () => {
+                card.addEventListener('click', (e) => {
+                    // Don't open modal if clicking delete button
+                    if (e.target.closest('.delete-history-item')) return;
+                    
                     const itemId = card.dataset.itemId;
                     const item = history.find(h => String(h.id) === String(itemId));
                     if (item && window.Modal) {
@@ -854,6 +870,72 @@
                     }
                 });
             });
+            
+            // Setup delete button handlers
+            setupDeleteButtonHandlers();
+        }
+        
+        function setupDeleteButtonHandlers() {
+            const deleteButtons = document.querySelectorAll('.delete-history-item');
+            
+            deleteButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const itemId = btn.dataset.itemId;
+                    const itemName = btn.dataset.itemName;
+                    deleteHistoryItem(itemId, itemName);
+                });
+            });
+        }
+        
+        function deleteHistoryItem(itemId, itemName) {
+            try {
+                const history = getClickHistory();
+                const filteredHistory = history.filter(h => String(h.id) !== String(itemId));
+                
+                if (filteredHistory.length === history.length) {
+                    // Item not found
+                    return;
+                }
+                
+                // Save filtered history
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(filteredHistory));
+                
+                // Show two-line toast feedback
+                showDeleteToast(itemName);
+                
+                // Re-render history
+                renderAll();
+            } catch (error) {
+                console.error('Error deleting history item:', error);
+                showHistoryToast('Failed to remove item.', 'error');
+            }
+        }
+        
+        function showDeleteToast(itemName) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 right-4 px-5 py-4 rounded-lg shadow-lg z-[60] transform transition-all duration-300 bg-gray-800 text-white max-w-sm';
+            toast.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0 w-6 h-6 bg-green-600 rounded-full flex items-center justify-center mt-0.5">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-white">Item removed from your click history</p>
+                        <p class="text-gray-400 text-sm mt-1">It will no longer affect future recommendations.</p>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            lucide.createIcons();
+            
+            setTimeout(() => toast.classList.add('opacity-100'), 10);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
         }
         
         function updatePaginationUI() {
@@ -935,6 +1017,111 @@
         }
         
         // =========================================
+        // Enhance Recommendations
+        // =========================================
+        async function enhanceRecommendations() {
+            const btn = document.getElementById('enhance-recommendations-btn');
+            if (!btn) return;
+            
+            const history = getClickHistory();
+            if (history.length === 0) {
+                showHistoryToast('No click history to enhance with. Click on some recommendations first.', 'error');
+                return;
+            }
+            
+            // Disable button and show loading state
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Enhancing...';
+            lucide.createIcons();
+            
+            try {
+                // Call the full FL workflow with click history
+                const result = await NetflixAPI.triggerRefresh(history);
+                
+                if (result.status === 'no_viewing_history') {
+                    showHistoryToast('Please upload your Netflix viewing history first.', 'error');
+                    resetEnhanceButton();
+                    return;
+                }
+                
+                if (result.status === 'already_running') {
+                    showHistoryToast('Training is already in progress. Please wait.', 'error');
+                    resetEnhanceButton();
+                    return;
+                }
+                
+                showHistoryToast('Model enhancement started! Your recommendations will improve based on your click history.', 'success');
+                
+                // Start polling for completion
+                startEnhancePolling();
+            } catch (error) {
+                console.error('Enhance recommendations error:', error);
+                
+                if (error.status === 'no_viewing_history') {
+                    showHistoryToast('Please upload your Netflix viewing history first.', 'error');
+                } else {
+                    showHistoryToast('Failed to enhance recommendations. Please try again.', 'error');
+                }
+                
+                resetEnhanceButton();
+            }
+        }
+        
+        function resetEnhanceButton() {
+            const btn = document.getElementById('enhance-recommendations-btn');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4"></i> Enhance Recommendations via History';
+                lucide.createIcons();
+            }
+        }
+        
+        let enhancePollingInterval = null;
+        
+        function startEnhancePolling() {
+            if (enhancePollingInterval) {
+                clearInterval(enhancePollingInterval);
+            }
+            
+            enhancePollingInterval = setInterval(async () => {
+                try {
+                    const status = await NetflixAPI.getFLStatus();
+                    
+                    if (status.status === 'ready') {
+                        clearInterval(enhancePollingInterval);
+                        enhancePollingInterval = null;
+                        resetEnhanceButton();
+                        showHistoryToast('Recommendations enhanced! Visit the recommendations page to see your improved results.', 'success');
+                    } else if (status.status === 'error') {
+                        clearInterval(enhancePollingInterval);
+                        enhancePollingInterval = null;
+                        resetEnhanceButton();
+                        showHistoryToast('Enhancement failed: ' + (status.message || 'Unknown error'), 'error');
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }, 3000);
+        }
+        
+        function showHistoryToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-[60] transform transition-all duration-300 max-w-md ${
+                type === 'success' ? 'bg-green-600' : 'bg-red-600'
+            } text-white`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('opacity-100'), 10);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+        
+        // =========================================
         // Initialization
         // =========================================
         document.addEventListener('DOMContentLoaded', () => {
@@ -957,6 +1144,7 @@
             
             // Event listeners
             document.getElementById('clear-history-btn')?.addEventListener('click', clearHistory);
+            document.getElementById('enhance-recommendations-btn')?.addEventListener('click', enhanceRecommendations);
             document.getElementById('prev-page-btn')?.addEventListener('click', goToPrevPage);
             document.getElementById('next-page-btn')?.addEventListener('click', goToNextPage);
             

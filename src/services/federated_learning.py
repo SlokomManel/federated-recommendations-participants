@@ -33,6 +33,41 @@ def get_fl_status():
     return fl_status
 
 
+def clear_user_models(private_folder):
+    """
+    Clear existing user models to prevent overfitting during retraining.
+    
+    This ensures fine-tuning starts fresh from the global model rather than
+    building on top of an already-trained local model, which causes cumulative
+    overfitting when retraining multiple times.
+    
+    Deletes:
+    - svd_training/U.npy (user embedding matrix)
+    - svd_training/updated_V.npy (locally updated item factors)
+    
+    Preserves:
+    - global_V.npy (from aggregator - read only)
+    - delta_V.npy (output for aggregator - will be regenerated)
+    
+    Args:
+        private_folder: Path to the participant's private folder
+    """
+    svd_training_path = Path(private_folder) / "svd_training"
+    
+    files_to_delete = [
+        svd_training_path / "U.npy",
+        svd_training_path / "updated_V.npy",
+    ]
+    
+    for file_path in files_to_delete:
+        if file_path.exists():
+            try:
+                os.remove(file_path)
+                logging.info(f"Cleared existing user model: {file_path}")
+            except Exception as e:
+                logging.warning(f"Could not delete {file_path}: {e}")
+
+
 def load_csv_to_numpy(file_path: str) -> np.ndarray:
     """Load a CSV file into a NumPy array, skipping empty rows."""
     import csv
@@ -313,6 +348,10 @@ def run_full_fl_workflow(profile: str = "profile_0", epsilon: float = 1.0, click
             }
             logging.error("FL workflow failed: No viewing history found")
             return False
+        
+        # Step 2.5: Clear existing user models to prevent overfitting
+        # This ensures we start fresh from the global model each time
+        clear_user_models(private_folder)
         
         # Step 3: Prepare participant data (with click history augmentation)
         prepare_participant_data(

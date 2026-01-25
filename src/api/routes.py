@@ -244,6 +244,58 @@ async def api_recommendations():
         }, status_code=500)
 
 
+@router.get("/movie/{movie_id}")
+async def api_movie_details(movie_id: int):
+    """
+    Fetch enriched details for a specific movie by ID.
+    
+    Used by the modal to display full details when clicking on history items.
+    """
+    if not recommendations_exist():
+        return JSONResponse({
+            "error": "No recommendations available",
+            "status": "pending"
+        }, status_code=404)
+    
+    try:
+        raw_recommends, reranked_recommends = load_recommendations()
+        
+        # Search in both lists for the movie
+        item = None
+        for rec in raw_recommends:
+            if rec.get("id") == movie_id:
+                item = rec
+                break
+        
+        if not item:
+            for rec in reranked_recommends:
+                if rec.get("id") == movie_id:
+                    item = rec
+                    break
+        
+        if not item:
+            return JSONResponse({
+                "error": f"Movie with ID {movie_id} not found",
+                "status": "not_found"
+            }, status_code=404)
+        
+        # Enrich the item with full details
+        enriched_item = enrich_recommendation(item)
+        
+        return JSONResponse({
+            "status": "success",
+            "item": enriched_item,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logging.error(f"Error fetching movie details: {e}")
+        return JSONResponse({
+            "error": str(e),
+            "status": "error"
+        }, status_code=500)
+
+
 @router.post("/recommendations/compute")
 async def api_compute_recommendations(background_tasks: BackgroundTasks, data: dict = None):
     """Trigger recommendation computation in the background."""

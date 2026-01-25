@@ -170,6 +170,42 @@ async function submitOptOut(reason = '', userMessage = '', timestamp = new Date(
 }
 
 /**
+ * Get movie details by ID
+ * @param {number} movieId - The ID of the movie to fetch details for
+ * @returns {Promise<Object>} Enriched movie details
+ */
+async function getMovieDetails(movieId) {
+    const response = await fetch(`${API_BASE_URL}/api/movie/${movieId}`);
+    if (!response.ok) {
+        if (response.status === 404) {
+            return { error: 'Movie not found', status: 'not_found' };
+        }
+        throw new Error(`Failed to fetch movie details: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+/**
+ * Recompute recommendations using existing model (no fine-tuning)
+ * This just regenerates recommendations without retraining the model
+ * @returns {Promise<Object>} Result of starting computation
+ */
+async function recomputeRecommendations() {
+    const response = await fetch(`${API_BASE_URL}/api/recommendations/compute`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+    });
+    
+    if (!response.ok) {
+        throw new Error(`Failed to recompute recommendations: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+/**
  * Trigger full refresh (FL workflow: fine-tune model + compute recommendations)
  * This uses click history to augment training data before fine-tuning
  * @param {Array} clickHistory - Array of clicked items to enhance training
@@ -222,6 +258,8 @@ window.NetflixAPI = {
     getDataStatus,
     uploadHistory,
     triggerRefresh,
+    recomputeRecommendations,
+    getMovieDetails,
     submitChoice,
     healthCheck,
     submitWatchlistAction,

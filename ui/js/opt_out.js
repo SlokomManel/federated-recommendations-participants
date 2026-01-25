@@ -49,7 +49,7 @@ function resetOptOutModalContent() {
 
     // Reset submit button
     submit.disabled = false;
-    submit.innerHTML = '<i data-lucide="log-out" class="w-4 h-4"></i> Opt out & delete local data';
+    submit.innerHTML = '<i data-lucide="log-out" class="w-4 h-4"></i> Delete local data';
     if (window.lucide) lucide.createIcons();
 }
 

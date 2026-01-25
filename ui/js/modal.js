@@ -7,23 +7,96 @@
 let currentModalItem = null;
 
 /**
- * Open the detail modal with show information
- * @param {Object} item - The recommendation item to display
+ * Show loading state in modal
  */
-function openModal(item) {
-    currentModalItem = item;
+function showModalLoading() {
     const modal = document.getElementById('detail-modal');
     const overlay = document.getElementById('modal-overlay');
     
     if (!modal || !overlay) return;
     
+    // Show modal with loading state
+    overlay.classList.remove('hidden');
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Set loading placeholders
+    const titleEl = document.getElementById('modal-title');
+    if (titleEl) titleEl.textContent = 'Loading...';
+    
+    const posterEl = document.getElementById('modal-poster');
+    if (posterEl) posterEl.src = 'https://via.placeholder.com/300x450?text=Loading...';
+    
+    const metaEl = document.getElementById('modal-meta');
+    if (metaEl) metaEl.innerHTML = '';
+    
+    const descEl = document.getElementById('modal-description');
+    if (descEl) descEl.textContent = 'Loading details...';
+    
+    const genresEl = document.getElementById('modal-genres');
+    if (genresEl) genresEl.classList.add('hidden');
+    
+    const typeEl = document.getElementById('modal-type');
+    if (typeEl) typeEl.classList.add('hidden');
+    
+    const castSection = document.getElementById('modal-cast-section');
+    if (castSection) castSection.classList.add('hidden');
+    
+    const directorSection = document.getElementById('modal-director-section');
+    if (directorSection) directorSection.classList.add('hidden');
+    
+    const whySection = document.getElementById('modal-why-section');
+    if (whySection) whySection.classList.add('hidden');
+    
+    const watchlistSection = document.getElementById('modal-watchlist-section');
+    if (watchlistSection) watchlistSection.classList.add('hidden');
+}
+
+/**
+ * Open the detail modal with show information
+ * Fetches full details from server if item only has basic info (e.g., from history)
+ * @param {Object} item - The recommendation item to display (must have at least id)
+ */
+async function openModal(item) {
+    const modal = document.getElementById('detail-modal');
+    const overlay = document.getElementById('modal-overlay');
+    
+    if (!modal || !overlay) return;
+    
+    // Check if item needs enrichment (missing description indicates incomplete data)
+    const needsEnrichment = !item.description || item.description === '';
+    
+    if (needsEnrichment && item.id !== undefined) {
+        // Show loading state first
+        showModalLoading();
+        
+        try {
+            // Fetch full details from server
+            const result = await NetflixAPI.getMovieDetails(item.id);
+            
+            if (result.status === 'success' && result.item) {
+                // Merge with original item to preserve any local data (like rank, clickedAt)
+                currentModalItem = { ...item, ...result.item };
+            } else {
+                // Fallback to original item if fetch fails
+                console.warn('Could not fetch movie details, using local data');
+                currentModalItem = item;
+            }
+        } catch (error) {
+            console.error('Error fetching movie details:', error);
+            currentModalItem = item;
+        }
+    } else {
+        currentModalItem = item;
+    }
+    
     // Get current settings
     const settings = Settings.get();
     
-    // Populate modal content
-    populateModalContent(item, settings);
+    // Populate modal content with full data
+    populateModalContent(currentModalItem, settings);
     
-    // Show modal
+    // Ensure modal is visible (may already be from loading state)
     overlay.classList.remove('hidden');
     modal.classList.remove('hidden');
     
