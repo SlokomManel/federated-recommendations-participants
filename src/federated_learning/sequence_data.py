@@ -4,35 +4,10 @@ import json
 import os
 import re
 from datetime import datetime
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from rapidfuzz import process
-
-from src.config import DATA_DIR
-
-
-def get_local_vocabulary_path():
-    """Get the path to the local vocabulary file."""
-    return DATA_DIR / "tv-series_vocabulary.json"
-
-
-def get_local_vocabulary_json():
-    """Load the local vocabulary JSON."""
-    vocab_path = get_local_vocabulary_path()
-    if not vocab_path.exists():
-        raise FileNotFoundError(
-            f"Local vocabulary file not found at {vocab_path}. "
-            "This file is required as a fallback when the shared vocabulary is unavailable."
-        )
-
-    try:
-        with open(vocab_path, "r", encoding="utf-8") as file:
-            return json.load(file)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON in local vocabulary file at {vocab_path}: {e}") from e
-
 
 class SequenceData:
     """Process Netflix viewing data into sequential format."""
@@ -96,13 +71,9 @@ def match_title(title, vocabulary: dict, threshold=80):
 
 def create_view_counts_vector(restricted_shared_folder, aggregated_data: pd.DataFrame) -> np.ndarray:
     """Create sparse vector of view counts."""
-    try:
-        shared_file = os.path.join(restricted_shared_folder, "tv-series_vocabulary.json")
-        with open(shared_file, "r", encoding="utf-8") as file:
-            vocabulary = json.load(file)
-    except:
-        print("Dev Note -> Could not find shared file. Loading from local file.")
-        vocabulary = get_local_vocabulary_json()
+    shared_file = os.path.join(restricted_shared_folder, "vocabulary.json")
+    with open(shared_file, "r", encoding="utf-8") as file:
+        vocabulary = json.load(file)
 
     aggregated_data["ID"] = aggregated_data["show"].apply(lambda x: match_title(x, vocabulary))
 

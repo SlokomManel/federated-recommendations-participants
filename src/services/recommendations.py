@@ -14,33 +14,44 @@ from src.config import DATA_DIR
 
 
 def get_recommendations_data(recommendation_list, df):
-    """Convert recommendation list to enriched data with metadata from DataFrame."""
+    """Convert recommendation list to enriched data with metadata from DataFrame.
+    
+    Uses imdb_titles_extended.csv as data source with columns:
+    - title: Title name
+    - age_certification: Content rating (TV-MA, PG, etc.)
+    - imdb_score: IMDB rating value
+    
+    Note: Language and Cover URL are not available in the extended CSV yet.
+    """
     recommendations_data = []
     for i, (name, idx, score) in enumerate(recommendation_list):
         print(f"\t{i+1} => {name}: {score:.4f}")
 
         try:
-            row = df[df["Title"].str.strip() == name].iloc[0]
+            row = df[df["title"].str.strip() == name].iloc[0]
         except IndexError:
             logging.warning(f"Could not find metadata for: {name}")
             continue
             
         safe_score = float(score) if not math.isnan(score) else 0.0
 
-        language = row["Language"] if pd.notna(row["Language"]) else "N/A"
-        rating = row["Rating"] if pd.notna(row["Rating"]) else "N/A"
-        img = row["Cover URL"] if pd.notna(row["Cover URL"]) else ""
-
-        language = str(language) if language not in (None, "") else "N/A"
+        # Language and Cover URL not available in imdb_titles_extended.csv
+        language = "N/A"
+        img = ""
+        
+        # age_certification replaces Rating
+        rating = row["age_certification"] if pd.notna(row["age_certification"]) else "N/A"
         rating = str(rating) if rating not in (None, "") else "N/A"
-        img = str(img) if img is not None else ""
+        
+        # imdb_score replaces IMDB (no "/10" suffix in extended file)
+        imdb = row["imdb_score"] if pd.notna(row["imdb_score"]) else "N/A"
         
         entry = {
             "id": int(idx),
             "name": name,
             "language": language,
             "rating": rating,
-            "imdb": row["IMDB"] if pd.notna(row["IMDB"]) else "N/A",
+            "imdb": imdb,
             "img": img,
             "count": int(safe_score),
             "raw_score": safe_score
@@ -86,9 +97,9 @@ def local_recommendation(local_path, global_path, tv_vocab, exclude_watched=True
         user_U, global_V, tv_vocab, user_aggregated_activity, exclude_watched=exclude_watched
     )
 
-    csv_file_path = DATA_DIR / "netflix_series_2024-12.csv.zip"
+    csv_file_path = DATA_DIR / "imdb_titles_extended.csv"
     try:
-        df = pd.read_csv(csv_file_path, compression='zip')
+        df = pd.read_csv(csv_file_path)
     except Exception as e:
         print(f"> Error: Unable to read CSV from {csv_file_path}. Error: {e}")
         return None, None
@@ -134,7 +145,7 @@ def run_recommendation_computation():
         # Load TV vocabulary
         tv_vocab = {}
         try:
-            json_file_path = shared_folder_path / "tv-series_vocabulary.json"
+            json_file_path = shared_folder_path / "vocabulary.json"
             with open(json_file_path, 'r', encoding='utf-8') as f:
                 tv_vocab = json.load(f)
         except Exception as e:

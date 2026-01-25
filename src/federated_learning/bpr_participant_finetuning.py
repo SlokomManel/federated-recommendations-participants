@@ -16,7 +16,6 @@ from src.federated_learning.bpr_dp import (
     apply_differential_privacy,
     plot_ratings_norm,
 )
-from src.federated_learning.sequence_data import get_local_vocabulary_path
 
 
 def save_training_results(user_id, private_path, restricted_path, V, delta_V, U_u):
@@ -148,15 +147,10 @@ def participant_fine_tuning(
     Returns:
         dict: The differentially private deltas (delta_V)
     """
-    # Step 1: Load vocabulary
-    try:
-        vocabulary_path = os.path.join(global_path, "tv-series_vocabulary.json")
-        tv_vocab = load_tv_vocabulary(vocabulary_path)
-        print(f"Loaded TV series vocabulary from {vocabulary_path}.")
-    except FileNotFoundError:
-        vocabulary_path = get_local_vocabulary_path()
-        tv_vocab = load_tv_vocabulary(str(vocabulary_path))
-        print(f"Loaded TV series vocabulary from local file: {vocabulary_path}.")
+    # Step 1: Load vocabulary from shared folder
+    vocabulary_path = os.path.join(global_path, "vocabulary.json")
+    tv_vocab = load_tv_vocabulary(vocabulary_path)
+    print(f"Loaded vocabulary from {vocabulary_path}.")
 
     # Step 2: Load global item factors
     V = load_global_item_factors(global_path)
