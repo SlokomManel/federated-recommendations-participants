@@ -16,6 +16,7 @@ from src.federated_learning.bpr_dp import (
     apply_differential_privacy,
     plot_ratings_norm,
 )
+from src.federated_learning.sequence_data import match_title
 
 
 def save_training_results(user_id, private_path, restricted_path, V, delta_V, U_u):
@@ -52,8 +53,18 @@ def save_training_results(user_id, private_path, restricted_path, V, delta_V, U_
 
 
 def prepare_training_data(user_id, tv_vocab, final_ratings):
-    """Prepare training data for the participant."""
-    item_ids = {title: tv_vocab[title] for title in final_ratings if title in tv_vocab}
+    """Prepare training data for the participant.
+    
+    Uses fuzzy matching to map Netflix titles to vocabulary indices,
+    consistent with how create_view_counts_vector works.
+    """
+    item_ids = {}
+    for title in final_ratings:
+        # Use fuzzy matching (same as sequence_data.create_view_counts_vector)
+        matched_idx = match_title(title, tv_vocab, threshold=80)
+        if matched_idx != -1:
+            item_ids[title] = matched_idx
+    
     return [
         (user_id, item_ids[t], final_ratings[t]) for t in final_ratings if t in item_ids
     ]
@@ -163,13 +174,20 @@ def participant_fine_tuning(
         user_id, V.shape[1], save_path=os.path.join(private_path, "svd_training")
     )
 
-    # Step 5: Prepare training data
+    # Step 5: Prepare training data (uses fuzzy matching)
     train_data = prepare_training_data(user_id, tv_vocab, final_ratings)
+    print(f"Participant has {len(final_ratings)} ratings, matched {len(train_data)} to vocabulary.")
+    
     if not train_data:
+        # Provide helpful debugging info
+        sample_ratings = list(final_ratings.keys())[:5]
+        sample_vocab = list(tv_vocab.keys())[:5]
         raise ValueError(
-            "No training items after mapping participant ratings to vocabulary. "
-            "This indicates `ratings.npy` keys don't match the vocabulary titles "
-            "(or ratings is empty)."
+            f"No training items after mapping participant ratings to vocabulary. "
+            f"Ratings has {len(final_ratings)} items, vocabulary has {len(tv_vocab)} items. "
+            f"Sample rating titles: {sample_ratings}. "
+            f"Sample vocab titles: {sample_vocab}. "
+            f"Check if titles use different formatting or the vocabulary is outdated."
         )
 
     # Step 6: Perform local training
