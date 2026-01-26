@@ -23,6 +23,9 @@ const GENRE_FILTERS_KEY = 'netflix_genre_filters';
 // Privacy acceptance key
 const PRIVACY_ACCEPTED_KEY = 'netflix_privacy_accepted';
 
+// Global V mtime tracking key (for detecting aggregator updates)
+const GLOBAL_V_MTIME_KEY = 'netflix_global_v_mtime';
+
 // DOM Elements
 const elements = {
     loadingSection: () => document.getElementById('loading-section'),
@@ -215,8 +218,26 @@ async function checkStatusAndLoad() {
             return;
         }
         
-        // Ready state with recommendations - display them
+        // Ready state with recommendations - check for global_V changes first
         if (status.status === 'ready' && status.has_recommendations) {
+            // Check if global_V has been updated by aggregator
+            const shouldRefresh = await checkGlobalVChanged();
+            
+            if (shouldRefresh) {
+                console.log('Global model updated by aggregator, auto-triggering FL workflow...');
+                showLoading('New global model detected! Updating your recommendations...');
+                try {
+                    const clickHistory = getClickHistory();
+                    await NetflixAPI.triggerRefresh(clickHistory);
+                    startFLPolling();
+                } catch (refreshError) {
+                    console.error('Auto-refresh error:', refreshError);
+                    // Fall back to showing existing recommendations
+                    await loadAndDisplayRecommendations();
+                }
+                return;
+            }
+            
             await loadAndDisplayRecommendations();
             return;
         }
@@ -860,6 +881,65 @@ function wasItemClicked(itemId) {
 }
 
 /**
+ * Get stored global_V mtime from localStorage
+ */
+function getStoredGlobalVMtime() {
+    return localStorage.getItem(GLOBAL_V_MTIME_KEY);
+}
+
+/**
+ * Update stored global_V mtime in localStorage
+ * @param {string} mtime - ISO timestamp of global_V last modified time
+ */
+function updateStoredGlobalVMtime(mtime) {
+    if (mtime) {
+        localStorage.setItem(GLOBAL_V_MTIME_KEY, mtime);
+        console.log('Updated stored global_V mtime:', mtime);
+    }
+}
+
+/**
+ * Check if global_V has been updated by the aggregator
+ * Returns true if we should trigger a refresh, false otherwise
+ * IMPORTANT: Updates the stored mtime BEFORE returning to prevent duplicate triggers
+ */
+async function checkGlobalVChanged() {
+    try {
+        const globalVInfo = await NetflixAPI.getGlobalVInfo();
+        
+        if (!globalVInfo.exists) {
+            console.log('Global model does not exist yet');
+            return false;
+        }
+        
+        const currentMtime = globalVInfo.last_modified;
+        const storedMtime = getStoredGlobalVMtime();
+        
+        console.log('Global V check:', { current: currentMtime, stored: storedMtime });
+        
+        // If no stored mtime, this is first time - store it and don't trigger refresh
+        if (!storedMtime) {
+            console.log('First time seeing global_V, storing mtime');
+            updateStoredGlobalVMtime(currentMtime);
+            return false;
+        }
+        
+        // Compare mtimes
+        if (currentMtime !== storedMtime) {
+            console.log('Global model has been updated!');
+            // Update stored mtime FIRST to prevent duplicate triggers
+            updateStoredGlobalVMtime(currentMtime);
+            return true;
+        }
+        
+        return false;
+    } catch (error) {
+        console.error('Error checking global_V:', error);
+        return false;
+    }
+}
+
+/**
  * Start polling for computation status
  */
 function startPolling() {
@@ -1191,6 +1271,13 @@ window.ClickHistory = {
     get: getClickHistory,
     save: saveToClickHistory,
     wasClicked: wasItemClicked
+};
+
+// Export global_V mtime functions for use in other modules (e.g., history.html)
+window.GlobalVTracker = {
+    getMtime: getStoredGlobalVMtime,
+    updateMtime: updateStoredGlobalVMtime,
+    checkChanged: checkGlobalVChanged
 };
 
 // Export AppState and getCurrentPageItems for use by modal.js

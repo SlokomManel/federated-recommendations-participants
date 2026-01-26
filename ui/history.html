@@ -48,6 +48,9 @@
                 <a href="index.html" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Back to Recommendations">
                     <i data-lucide="arrow-left" class="w-6 h-6"></i>
                 </a>
+                <button id="replace-history-btn" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Replace Netflix Viewing History">
+                    <i data-lucide="upload" class="w-6 h-6"></i>
+                </button>
                 <button id="settings-btn" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Settings">
                     <i data-lucide="settings" class="w-6 h-6"></i>
                 </button>
@@ -272,7 +275,7 @@
                     <i data-lucide="list" class="w-5 h-5"></i>
                     Recent Activity
                 </h3>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     <button id="enhance-recommendations-btn" class="px-4 py-2 bg-green-600/20 hover:bg-green-600/40 text-green-400 rounded-lg text-sm transition-colors flex items-center gap-2">
                         <i data-lucide="sparkles" class="w-4 h-4"></i>
                         Enhance Recommendations via History
@@ -443,6 +446,55 @@
             </div>
         </div>
     </div>
+    
+    <!-- Replace Viewing History Modal -->
+    <div id="replace-history-overlay" class="fixed inset-0 bg-black/70 z-[100] hidden flex items-center justify-center p-6">
+        <div id="replace-history-modal" class="bg-netflix-dark rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
+            <div class="p-6 sm:p-8">
+                <div class="flex items-start justify-between gap-4 mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-blue-900/20 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="upload" class="w-6 h-6 text-blue-300"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-white">Replace Viewing History</h2>
+                            <p class="text-gray-400 text-sm">Upload a new Netflix viewing history file</p>
+                        </div>
+                    </div>
+                    <button id="replace-history-close" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                        <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+                    </button>
+                </div>
+
+                <div class="mb-6">
+                    <p class="text-gray-400 text-sm mb-4">
+                        This will replace your current Netflix viewing history with a new file. 
+                        Your existing recommendations will be recalculated based on the new data.
+                    </p>
+                    <p class="text-gray-500 text-xs">
+                        Download your viewing history from Netflix: Account → Profile → Viewing Activity → Download all
+                    </p>
+                </div>
+
+                <!-- Drop zone -->
+                <div id="replace-drop-zone" class="border-2 border-dashed border-gray-600 rounded-lg p-8 mb-4 hover:border-blue-500 transition-colors cursor-pointer text-center">
+                    <input type="file" id="replace-file-input" accept=".csv" class="hidden">
+                    <i data-lucide="file-up" class="w-12 h-12 text-gray-500 mx-auto mb-3"></i>
+                    <p class="text-gray-400">Drag & drop your CSV here</p>
+                    <p class="text-gray-500 text-sm mt-2">or click to browse</p>
+                </div>
+                <p id="replace-upload-status" class="text-sm text-gray-500 text-center"></p>
+
+                <div class="mt-6 flex gap-3">
+                    <button id="replace-history-cancel" class="flex-1 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg transition-colors text-sm font-medium">
+                        Cancel
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    
     <!-- Footer -->
     <footer class="bg-netflix-dark py-6 px-4 mt-auto">
         <div class="max-w-7xl mx-auto text-center">
@@ -1045,15 +1097,27 @@
                 }
                 
                 if (result.status === 'already_running') {
-                    showHistoryToast('Training is already in progress. Please wait.', 'error');
-                    resetEnhanceButton();
+                    showHistoryToast('Training is already in progress. Redirecting...', 'error');
+                    // Still redirect to main page to show progress
+                    window.location.href = 'index.html';
                     return;
                 }
                 
-                showHistoryToast('Model enhancement started! Your recommendations will improve based on your click history.', 'success');
+                // Update global_V mtime to prevent duplicate refresh on main page
+                try {
+                    const globalVInfo = await NetflixAPI.getGlobalVInfo();
+                    if (globalVInfo.exists && globalVInfo.last_modified) {
+                        localStorage.setItem('netflix_global_v_mtime', globalVInfo.last_modified);
+                        console.log('Updated global_V mtime before redirect:', globalVInfo.last_modified);
+                    }
+                } catch (mtimeError) {
+                    console.error('Failed to update global_V mtime:', mtimeError);
+                    // Continue with redirect anyway
+                }
                 
-                // Start polling for completion
-                startEnhancePolling();
+                // Immediately redirect to main page - it will show loading/polling progress
+                window.location.href = 'index.html';
+                
             } catch (error) {
                 console.error('Enhance recommendations error:', error);
                 
@@ -1122,6 +1186,132 @@
         }
         
         // =========================================
+        // Replace Viewing History Modal
+        // =========================================
+        function showReplaceHistoryModal() {
+            const overlay = document.getElementById('replace-history-overlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+                lucide.createIcons();
+            }
+        }
+        
+        function hideReplaceHistoryModal() {
+            const overlay = document.getElementById('replace-history-overlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+            }
+            // Reset upload status
+            const status = document.getElementById('replace-upload-status');
+            if (status) {
+                status.textContent = '';
+                status.className = 'text-sm text-gray-500 text-center';
+            }
+        }
+        
+        function setupReplaceHistoryHandlers() {
+            const overlay = document.getElementById('replace-history-overlay');
+            const closeBtn = document.getElementById('replace-history-close');
+            const cancelBtn = document.getElementById('replace-history-cancel');
+            const dropZone = document.getElementById('replace-drop-zone');
+            const fileInput = document.getElementById('replace-file-input');
+            const replaceBtn = document.getElementById('replace-history-btn');
+            
+            // Open modal when button clicked
+            replaceBtn?.addEventListener('click', showReplaceHistoryModal);
+            
+            // Close modal handlers
+            closeBtn?.addEventListener('click', hideReplaceHistoryModal);
+            cancelBtn?.addEventListener('click', hideReplaceHistoryModal);
+            
+            // Close on overlay click
+            overlay?.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    hideReplaceHistoryModal();
+                }
+            });
+            
+            // File input handlers
+            if (dropZone && fileInput) {
+                // Click to browse
+                dropZone.addEventListener('click', () => fileInput.click());
+                
+                // File selected via input
+                fileInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) handleReplaceHistoryUpload(file);
+                });
+                
+                // Drag and drop events
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('border-blue-500', 'bg-blue-500/10');
+                });
+                
+                dropZone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('border-blue-500', 'bg-blue-500/10');
+                });
+                
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('border-blue-500', 'bg-blue-500/10');
+                    
+                    const file = e.dataTransfer.files[0];
+                    if (file) handleReplaceHistoryUpload(file);
+                });
+            }
+        }
+        
+        async function handleReplaceHistoryUpload(file) {
+            const uploadStatus = document.getElementById('replace-upload-status');
+            
+            // Validate file type
+            if (!file.name.endsWith('.csv')) {
+                uploadStatus.textContent = 'Please upload a CSV file';
+                uploadStatus.className = 'text-sm text-red-400 text-center';
+                return;
+            }
+            
+            uploadStatus.textContent = 'Uploading...';
+            uploadStatus.className = 'text-sm text-gray-400 text-center';
+            
+            try {
+                const result = await NetflixAPI.uploadHistory(file);
+                
+                uploadStatus.textContent = result.message;
+                uploadStatus.className = 'text-sm text-green-400 text-center';
+                
+                showHistoryToast('Viewing history replaced! Retraining recommendations...', 'success');
+                
+                // Hide modal immediately
+                hideReplaceHistoryModal();
+                
+                // Update global_V mtime and trigger FL workflow, then redirect
+                try {
+                    const globalVInfo = await NetflixAPI.getGlobalVInfo();
+                    if (globalVInfo.exists && globalVInfo.last_modified) {
+                        localStorage.setItem('netflix_global_v_mtime', globalVInfo.last_modified);
+                    }
+                } catch (e) {
+                    console.error('Failed to update global_V mtime:', e);
+                }
+                
+                // Trigger FL workflow with click history
+                const clickHistory = getClickHistory();
+                await NetflixAPI.triggerRefresh(clickHistory);
+                
+                // Redirect to main page (it will show loading and handle polling)
+                window.location.href = 'index.html';
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                uploadStatus.textContent = error.message || 'Upload failed';
+                uploadStatus.className = 'text-sm text-red-400 text-center';
+            }
+        }
+        
+        // =========================================
         // Initialization
         // =========================================
         document.addEventListener('DOMContentLoaded', () => {
@@ -1147,6 +1337,9 @@
             document.getElementById('enhance-recommendations-btn')?.addEventListener('click', enhanceRecommendations);
             document.getElementById('prev-page-btn')?.addEventListener('click', goToPrevPage);
             document.getElementById('next-page-btn')?.addEventListener('click', goToNextPage);
+            
+            // Setup replace history modal handlers
+            setupReplaceHistoryHandlers();
             
             // Listen for watchlist status changes to re-render
             window.addEventListener('watchlistStatusChanged', () => {

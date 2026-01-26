@@ -149,6 +149,19 @@ async function getFLStatus() {
 }
 
 /**
+ * Get global model (global_V.npy) information
+ * Used to detect when the aggregator has updated the global model
+ * @returns {Promise<Object>} Global V info with exists, last_modified, path
+ */
+async function getGlobalVInfo() {
+    const response = await fetch(`${API_BASE_URL}/api/fl/global-v-info`);
+    if (!response.ok) {
+        throw new Error(`Global V info check failed: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+/**
  * Submit opt-out interaction log (reason + optional user message).
  * @param {string} reason - Selected reason label (optional)
  * @param {string} userMessage - Optional freeform user message
@@ -265,5 +278,6 @@ window.NetflixAPI = {
     submitWatchlistAction,
     getUser,
     getFLStatus,
+    getGlobalVInfo,
     submitOptOut
 };

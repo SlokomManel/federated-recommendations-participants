@@ -533,6 +533,40 @@ async def api_fl_status():
     })
 
 
+@router.get("/fl/global-v-info")
+async def api_global_v_info():
+    """
+    Get information about the global model file (global_V.npy).
+    
+    Used by the frontend to detect when the aggregator has updated the global model,
+    so it can auto-trigger a refresh of recommendations.
+    
+    Returns:
+        exists: Whether the global_V.npy file exists
+        last_modified: ISO timestamp of the file's last modification time
+        path: File path (for debugging)
+    """
+    profile = "profile_0"
+    restricted_shared_folder, _, _ = setup_environment(profile)
+    global_v_path = restricted_shared_folder / "global_V.npy"
+    
+    if global_v_path.exists():
+        mtime = global_v_path.stat().st_mtime
+        return JSONResponse({
+            "exists": True,
+            "last_modified": datetime.fromtimestamp(mtime).isoformat(),
+            "path": str(global_v_path),
+            "timestamp": datetime.now().isoformat()
+        })
+    
+    return JSONResponse({
+        "exists": False,
+        "last_modified": None,
+        "path": str(global_v_path),
+        "timestamp": datetime.now().isoformat()
+    })
+
+
 @router.post("/fl/fine-tune")
 async def api_fine_tune(background_tasks: BackgroundTasks, data: dict = None):
     """Trigger participant fine-tuning in the background."""
