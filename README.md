@@ -1,34 +1,109 @@
-# SyftBox Netflix BPR Participant
+# Federated Recommendations
 
-Participant application for the Netflix BPR federated learning recommendation system.
+`federated-recommendations` is a **local** app that builds recommendations from your **Netflix viewing history** (your raw history stays on your machine).
 
-## Overview
+It uses **SyftBox** to receive the latest **global model updates** and participate in federated learning without centralizing user data.
 
-This participant handles:
-- Processing Netflix viewing history
-- Local model fine-tuning (BPR)
-- Generating personalized recommendations
-- Serving the recommendation UI via FastAPI
+## Step 0 — Install `uv` (required)
 
-## Setup
+If you already have `uv`, skip this step. If you see “uv not found”, do this first.
 
-1. Install dependencies:
+### Windows (PowerShell)
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+### macOS / Linux (Terminal)
+
 ```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Then close/reopen your terminal so `uv` is on PATH.
+
+## Step 1 — Prepare your Netflix viewing history
+
+1. Netflix → **Account**
+2. **Security & Privacy** → download/request your personal information
+3. Unzip the export and find your viewing activity CSV (often named like `NetflixViewingHistory.csv`)
+
+## Step 2 — Install SyftBox (and keep it running)
+
+- **SyftBox home page**: `https://syftbox.net/`
+- **SyftBox docs**: `https://syftbox-documentation.openmined.org/get-started`
+
+SyftBox must be **running** while you use this app so you can receive the latest model updates.
+
+### Windows
+
+Recommended: install from `https://syftbox.net/` (supports auto-update + autostart).
+
+CLI-friendly (downloads the installer via terminal):
+
+```bat
+powershell -ExecutionPolicy ByPass -c "irm https://syftbox.net/install.ps1 | iex"
+```
+
+### macOS / Linux
+
+```bash
+curl -LsSf https://syftbox.openmined.org/install.sh | sh
+```
+
+### Keeping SyftBox running
+
+- **Simplest**: keep SyftBox open in a **separate terminal/window** while running the app.
+- **Most convenient**: use the desktop app installer and enable **autostart**.
+
+## Step 3 — Clone the repository
+
+You can clone this application anywhere on your machine.
+
+### Windows
+
+```powershell
+git clone https://github.com/oussama-romdhane/syftbox-netflix-participant
+cd .\federated-recommendations
+```
+
+### macOS / Linux
+
+```bash
+git clone https://github.com/oussama-romdhane/syftbox-netflix-participant
+cd federated-recommendations
+```
+
+No `git`? You can also download the repo as a ZIP and extract it anywhere.
+
+## Step 4 — Install & run the app
+
+### Windows (PowerShell)
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+### macOS / Linux (Terminal)
+
+```bash
+chmod +x install.sh
 ./install.sh
 ```
 
-2. Configure `.env` file with your settings
+Open the UI at:
 
-3. Run the application:
+- `http://localhost:8082`
+
+## Running the app
+
+If you have already installed the app, you don't need to run the installation script again. You can start it directly using:
+
 ```bash
 uv run python app.py
 ```
 
-## How It Works
+## Troubleshooting
 
-1. Fetches/loads Netflix viewing history
-2. Processes viewing data into model format
-3. Fine-tunes local user factors using BPR
-4. Computes delta updates (with differential privacy)
-5. Generates local recommendations using global model + local factors
-6. Serves UI for browsing recommendations
+- **`uv` not found**: redo Step 0, then restart your terminal.
+- **macOS/Linux “Permission denied”**: run `chmod +x install.sh`.
