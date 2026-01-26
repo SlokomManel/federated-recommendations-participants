@@ -7,13 +7,13 @@ const SETTINGS_KEY = 'netflix_recommendations_settings';
 
 // Default settings
 const DEFAULT_SETTINGS = {
-    showMoreDetails: false,      // Show rating, year, genre under cards
+    showMoreDetails: true,       // Show rating, year, genre under cards
     useReranked: false,          // Use re-ranked recommendations instead of raw
-    showWhyRecommended: false,   // Show "why recommended" in modal
-    enableWatchlist: false,      // Enable will/won't watch buttons
-    enableBlockItems: false,     // Enable "don't recommend again" feature
-    showActivityCharts: false,    // Show charts on profile page
-    showWatchlistStatus: false    // Show will/won't watch badges on history items
+    showWhyRecommended: true,    // Show "why recommended" in modal
+    enableWatchlist: true,       // Enable will/won't watch buttons
+    enableBlockItems: true,      // Enable "don't recommend again" feature
+    showActivityCharts: true,    // Show charts on profile page
+    showWatchlistStatus: true    // Show will/won't watch badges on history items
 };
 
 // Blocked items storage key
