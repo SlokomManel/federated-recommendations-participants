@@ -16,6 +16,10 @@ AGGREGATOR_DATASITE = os.getenv("AGGREGATOR_DATASITE")
 DATA_DIR = Path(__file__).parent.parent / "data"
 UI_DIR = Path(__file__).parent.parent / "ui"
 
+# Use augmented_titles.csv as the single source of data with semicolon separator
+TITLES_DB_PATH = DATA_DIR / "augmented_titles.csv"
+TITLES_DB_SEPARATOR = ";"
+
 
 def setup_logging():
     """Configure logging for the application."""

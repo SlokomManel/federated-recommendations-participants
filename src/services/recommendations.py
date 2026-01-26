@@ -16,12 +16,11 @@ from src.config import DATA_DIR
 def get_recommendations_data(recommendation_list, df):
     """Convert recommendation list to enriched data with metadata from DataFrame.
     
-    Uses imdb_titles_extended.csv as data source with columns:
+    Uses augmented_titles.csv as data source with columns:
     - title: Title name
-    - age_certification: Content rating (TV-MA, PG, etc.)
-    - imdb_score: IMDB rating value
-    
-    Note: Language and Cover URL are not available in the extended CSV yet.
+    - rating: Content rating (TV-MA, PG, etc.)
+    - tmdb_score: TMDB rating value (used instead of IMDB)
+    - cover_url: Poster image URL
     """
     recommendations_data = []
     for i, (name, idx, score) in enumerate(recommendation_list):
@@ -35,23 +34,26 @@ def get_recommendations_data(recommendation_list, df):
             
         safe_score = float(score) if not math.isnan(score) else 0.0
 
-        # Language and Cover URL not available in imdb_titles_extended.csv
-        language = "N/A"
-        img = ""
+        # Get cover image from augmented_titles.csv
+        img = row["cover_url"] if pd.notna(row.get("cover_url")) else ""
         
-        # age_certification replaces Rating
-        rating = row["age_certification"] if pd.notna(row["age_certification"]) else "N/A"
+        # Language not available
+        language = "N/A"
+        
+        # rating column contains content rating (TV-MA, PG, etc.)
+        rating = row["rating"] if pd.notna(row.get("rating")) else "N/A"
         rating = str(rating) if rating not in (None, "") else "N/A"
         
-        # imdb_score replaces IMDB (no "/10" suffix in extended file)
-        imdb = row["imdb_score"] if pd.notna(row["imdb_score"]) else "N/A"
+        # Use tmdb_score instead of imdb_score
+        tmdb_score = row["tmdb_score"] if pd.notna(row.get("tmdb_score")) else "N/A"
         
         entry = {
             "id": int(idx),
             "name": name,
             "language": language,
             "rating": rating,
-            "imdb": imdb,
+            "imdb": tmdb_score,  # Keep "imdb" key for UI compatibility, but use TMDB score
+            "tmdb_score": tmdb_score,
             "img": img,
             "count": int(safe_score),
             "raw_score": safe_score
@@ -97,9 +99,10 @@ def local_recommendation(local_path, global_path, tv_vocab, exclude_watched=True
         user_U, global_V, tv_vocab, user_aggregated_activity, exclude_watched=exclude_watched
     )
 
-    csv_file_path = DATA_DIR / "imdb_titles_extended.csv"
+    # Use augmented_titles.csv as the single source of data with semicolon separator
+    csv_file_path = DATA_DIR / "augmented_titles.csv"
     try:
-        df = pd.read_csv(csv_file_path)
+        df = pd.read_csv(csv_file_path, sep=';')
     except Exception as e:
         print(f"> Error: Unable to read CSV from {csv_file_path}. Error: {e}")
         return None, None
