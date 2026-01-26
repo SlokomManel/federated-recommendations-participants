@@ -1,5 +1,5 @@
 [project]
-name = "syftbox-netflix-participant"
+name = "federated-recommendations"
 version = "0.1.0"
 description = "SyftBox Netflix BPR Participant - Local Recommendations UI"
 readme = "README.md"
