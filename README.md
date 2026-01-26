@@ -37,19 +37,20 @@ SyftBox must be **running** while you use this app so you can receive the latest
 
 ### Windows
 
-Recommended: install from `https://syftbox.net/` (supports auto-update + autostart).
-
-CLI-friendly (downloads the installer via terminal):
+Install via terminal:
 
 ```bat
 powershell -ExecutionPolicy ByPass -c "irm https://syftbox.net/install.ps1 | iex"
 ```
+
 
 ### macOS / Linux
 
 ```bash
 curl -LsSf https://syftbox.openmined.org/install.sh | sh
 ```
+
+Desktop app: install from `https://syftbox.net/` (supports auto-update + autostart).
 
 ### Keeping SyftBox running
 
