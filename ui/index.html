@@ -437,8 +437,10 @@
         <div class="overflow-y-auto p-6 max-h-[calc(90vh-60px)]">
             <div class="flex flex-col sm:flex-row gap-6">
                 <!-- Poster -->
-                <div class="flex-shrink-0 mx-auto sm:mx-0">
-                    <img id="modal-poster" src="" alt="" class="w-40 sm:w-44 rounded-lg shadow-lg">
+                <div id="modal-poster-container" class="flex-shrink-0 mx-auto sm:mx-0">
+                    <div class="w-40 sm:w-44 aspect-[2/3] bg-netflix-gray rounded-lg shadow-lg flex items-center justify-center">
+                        <i data-lucide="image-off" class="w-12 h-12 text-gray-600"></i>
+                    </div>
                 </div>
                 
                 <!-- Info -->

@@ -619,16 +619,21 @@ function createRecommendationCard(item, settings, index) {
     card.dataset.id = item.id;
     card.dataset.clicked = wasClicked ? 'true' : 'false';
     
-    // Build card HTML
-    let cardHTML = `
-        <div class="relative aspect-[2/3]">
-            <img 
-                src="${item.img || ''}" 
+    // Build card HTML - either show image or image-off icon
+    const imageContent = item.img 
+        ? `<img 
+                src="${item.img}" 
                 alt="${item.name || ''}" 
                 class="w-full h-full object-cover"
-                onerror="this.src='https://via.placeholder.com/300x450?text=No+Image'"
                 loading="lazy"
-            />
+            />`
+        : `<div class="w-full h-full bg-netflix-gray flex items-center justify-center">
+                <i data-lucide="image-off" class="w-12 h-12 text-gray-600"></i>
+            </div>`;
+    
+    let cardHTML = `
+        <div class="relative aspect-[2/3]">
+            ${imageContent}
             <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
             
             <!-- Action buttons overlay (visible on hover) -->

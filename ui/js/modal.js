@@ -24,8 +24,15 @@ function showModalLoading() {
     const titleEl = document.getElementById('modal-title');
     if (titleEl) titleEl.textContent = 'Loading...';
     
-    const posterEl = document.getElementById('modal-poster');
-    if (posterEl) posterEl.src = 'https://via.placeholder.com/300x450?text=Loading...';
+    // Show image-off icon for loading state
+    const posterContainer = document.getElementById('modal-poster-container');
+    if (posterContainer) {
+        posterContainer.innerHTML = `
+            <div class="w-40 sm:w-44 aspect-[2/3] bg-netflix-gray rounded-lg shadow-lg flex items-center justify-center">
+                <i data-lucide="loader" class="w-8 h-8 text-gray-500 animate-spin"></i>
+            </div>
+        `;
+    }
     
     const metaEl = document.getElementById('modal-meta');
     if (metaEl) metaEl.innerHTML = '';
@@ -126,14 +133,25 @@ function closeModal() {
  * @param {Object} settings - Current user settings
  */
 function populateModalContent(item, settings) {
-    // Poster
-    const posterEl = document.getElementById('modal-poster');
-    if (posterEl) {
-        posterEl.src = item.img || '';
-        posterEl.alt = item.name || '';
-        posterEl.onerror = () => {
-            posterEl.src = 'https://via.placeholder.com/300x450?text=No+Image';
-        };
+    // Poster - show image or image-off icon
+    const posterContainer = document.getElementById('modal-poster-container');
+    if (posterContainer) {
+        if (item.img) {
+            posterContainer.innerHTML = `
+                <img 
+                    id="modal-poster" 
+                    src="${item.img}" 
+                    alt="${item.name || ''}" 
+                    class="w-40 sm:w-44 rounded-lg shadow-lg"
+                />
+            `;
+        } else {
+            posterContainer.innerHTML = `
+                <div class="w-40 sm:w-44 aspect-[2/3] bg-netflix-gray rounded-lg shadow-lg flex items-center justify-center">
+                    <i data-lucide="image-off" class="w-12 h-12 text-gray-600"></i>
+                </div>
+            `;
+        }
     }
     
     // Title
