@@ -60,6 +60,32 @@ function getSettings() {
 }
 
 /**
+ * Log settings to server for aggregator analytics
+ * Called when user toggles any setting (not on page load)
+ * @param {Object} settings - Current settings state
+ */
+async function logSettingsToServer(settings) {
+    try {
+        const response = await fetch('/api/settings/log', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(settings)
+        });
+        
+        if (!response.ok) {
+            console.warn('Failed to log settings to server:', response.statusText);
+        } else {
+            console.log('Settings logged to server');
+        }
+    } catch (error) {
+        // Silently fail - settings logging is not critical
+        console.warn('Error logging settings to server:', error);
+    }
+}
+
+/**
  * Update a single setting
  * @param {string} key - Setting key
  * @param {any} value - Setting value
@@ -68,6 +94,11 @@ function updateSetting(key, value) {
     const settings = loadSettings();
     settings[key] = value;
     saveSettings(settings);
+    
+    // Log the updated settings to the server for aggregator analytics
+    // This is only called on actual toggle, not on page load
+    logSettingsToServer(settings);
+    
     return settings;
 }
 

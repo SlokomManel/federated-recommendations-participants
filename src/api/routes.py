@@ -188,6 +188,17 @@ async def api_status():
             "last_updated": fl_status["last_updated"]
         })
     
+    # Check for FL errors
+    if fl_status["status"] == "error":
+        return JSONResponse({
+            "status": "error",
+            "error_type": fl_status.get("error_type", "error"),
+            "has_recommendations": has_recommendations,
+            "has_viewing_history": has_viewing_history,
+            "message": fl_status["message"],
+            "last_updated": fl_status["last_updated"]
+        })
+    
     if computation_status["status"] == "computing":
         return JSONResponse({
             "status": "computing",
@@ -196,7 +207,19 @@ async def api_status():
             "message": computation_status["message"],
             "last_updated": computation_status["last_updated"]
         })
-    elif has_recommendations:
+    
+    # Check for computation errors
+    if computation_status["status"] == "error":
+        return JSONResponse({
+            "status": "error",
+            "error_type": computation_status.get("error_type", "error"),
+            "has_recommendations": has_recommendations,
+            "has_viewing_history": has_viewing_history,
+            "message": computation_status["message"],
+            "last_updated": computation_status["last_updated"]
+        })
+    
+    if has_recommendations:
         return JSONResponse({
             "status": "ready",
             "has_recommendations": True,
@@ -512,6 +535,83 @@ async def api_opt_out(data: dict):
         })
     except Exception as e:
         logging.error(f"Error recording opt-out: {e}")
+        return JSONResponse({
+            "error": str(e),
+            "status": "error"
+        }, status_code=500)
+
+
+# Settings Tracking Endpoint
+
+@router.post("/settings/log")
+async def api_settings_log(data: dict):
+    """
+    Log user settings interaction to CSV for aggregator analytics.
+    
+    Called when user toggles any setting (not on page load).
+    Records the full current state of all settings.
+    
+    Request body:
+        showMoreDetails (bool): Show rating, year, genre under cards
+        useReranked (bool): Use re-ranked recommendations
+        showWhyRecommended (bool): Show "why recommended" in modal
+        enableWatchlist (bool): Enable will/won't watch buttons
+        enableBlockItems (bool): Enable "don't recommend again" feature
+        showActivityCharts (bool): Show charts on profile page
+        showWatchlistStatus (bool): Show will/won't watch badges
+    """
+    try:
+        timestamp = datetime.now().isoformat()
+        
+        # Extract settings values (default to True except useReranked)
+        settings_values = {
+            "showMoreDetails": data.get("showMoreDetails", True),
+            "useReranked": data.get("useReranked", False),
+            "showWhyRecommended": data.get("showWhyRecommended", True),
+            "enableWatchlist": data.get("enableWatchlist", True),
+            "enableBlockItems": data.get("enableBlockItems", True),
+            "showActivityCharts": data.get("showActivityCharts", True),
+            "showWatchlistStatus": data.get("showWatchlistStatus", True),
+        }
+        
+        row = [
+            timestamp,
+            client.email,
+            settings_values["showMoreDetails"],
+            settings_values["useReranked"],
+            settings_values["showWhyRecommended"],
+            settings_values["enableWatchlist"],
+            settings_values["enableBlockItems"],
+            settings_values["showActivityCharts"],
+            settings_values["showWatchlistStatus"],
+        ]
+        
+        # Store privately (restricted to aggregator-read)
+        _, restricted_public_folder, _ = setup_environment("profile_0")
+        csv_file_path = restricted_public_folder / "interaction_logs" / "settings.csv"
+        _ensure_csv_has_header(
+            csv_file_path,
+            [
+                "timestamp", "user",
+                "showMoreDetails", "useReranked", "showWhyRecommended",
+                "enableWatchlist", "enableBlockItems", "showActivityCharts",
+                "showWatchlistStatus"
+            ],
+        )
+        
+        with open(csv_file_path, "a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(row)
+        
+        logging.info(f"Settings logged for {client.email}")
+        
+        return JSONResponse({
+            "status": "success",
+            "message": "Settings logged",
+            "timestamp": timestamp
+        })
+    except Exception as e:
+        logging.error(f"Error logging settings: {e}")
         return JSONResponse({
             "error": str(e),
             "status": "error"

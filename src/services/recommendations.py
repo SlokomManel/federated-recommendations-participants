@@ -70,6 +70,11 @@ def local_recommendation(local_path, global_path, tv_vocab, exclude_watched=True
     user_U_path = os.path.join(local_path, "svd_training", "U.npy")
     user_aggregated_activity_path = os.path.join(local_path, "netflix_aggregated.npy")
     
+    # Check for global model file
+    if not os.path.exists(global_V_path):
+        logging.error(f"Global model not found: {global_V_path}")
+        raise FileNotFoundError(f"global_V.npy not found at {global_V_path}")
+    
     if not os.path.exists(user_U_path) or not os.path.exists(user_aggregated_activity_path):
         logging.error(f"User data not found: U.npy ({user_U_path}) / netflix_aggregated.npy ({user_aggregated_activity_path})")
         return None, None
@@ -151,11 +156,28 @@ def run_recommendation_computation():
             json_file_path = shared_folder_path / "vocabulary.json"
             with open(json_file_path, 'r', encoding='utf-8') as f:
                 tv_vocab = json.load(f)
-        except Exception as e:
-            logging.error(f"Could not find TV vocabulary file: {e}")
+        except FileNotFoundError:
+            # Check if the shared folder exists at all
+            if not shared_folder_path.exists():
+                error_msg = "Could not find aggregator shared folder. Please ensure SyftBox is running."
+                error_status = "syftbox_not_running"
+            else:
+                error_msg = "Vocabulary file not found. The aggregator hasn't initialized the model files yet. Please wait and try again."
+                error_status = "aggregator_not_initialized"
+            logging.error(f"{error_msg} (path: {json_file_path})")
             computation_status = {
                 "status": "error",
-                "message": f"Could not find TV vocabulary file: {e}",
+                "error_type": error_status,
+                "message": error_msg,
+                "last_updated": datetime.now().isoformat()
+            }
+            return
+        except Exception as e:
+            logging.error(f"Could not load TV vocabulary file: {e}")
+            computation_status = {
+                "status": "error",
+                "error_type": "vocabulary_error",
+                "message": f"Could not load TV vocabulary file: {e}",
                 "last_updated": datetime.now().isoformat()
             }
             return
@@ -204,11 +226,34 @@ def run_recommendation_computation():
             "last_updated": datetime.now().isoformat()
         }
         
-    except Exception as e:
-        logging.error(f"Error during recommendation computation: {e}")
+    except FileNotFoundError as e:
+        error_str = str(e)
+        logging.error(f"File not found during recommendation computation: {error_str}")
+        
+        # Determine user-friendly message based on which file is missing
+        if "vocabulary.json" in error_str:
+            error_msg = "Vocabulary file not found. The aggregator hasn't initialized the model files yet. Please wait and try again."
+            error_type = "aggregator_not_initialized"
+        elif "global_V" in error_str:
+            error_msg = "Global model not found. The aggregator hasn't processed any data yet. Please wait for the aggregator to run."
+            error_type = "aggregator_not_ready"
+        else:
+            error_msg = "Required model files not found. Please ensure SyftBox is running and the aggregator has been set up."
+            error_type = "syftbox_not_running"
+        
         computation_status = {
             "status": "error",
-            "message": str(e),
+            "error_type": error_type,
+            "message": error_msg,
+            "last_updated": datetime.now().isoformat()
+        }
+    except Exception as e:
+        error_str = str(e)
+        logging.error(f"Error during recommendation computation: {error_str}")
+        computation_status = {
+            "status": "error",
+            "error_type": "error",
+            "message": error_str,
             "last_updated": datetime.now().isoformat()
         }
 

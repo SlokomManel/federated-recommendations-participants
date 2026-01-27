@@ -959,7 +959,8 @@ function startPolling() {
                 await loadAndDisplayRecommendations();
             } else if (status.status === 'error') {
                 stopPolling();
-                showError(status.message || 'Computation failed.');
+                const errorType = status.error_type;
+                showError(status.message || 'Computation failed.', errorType);
             }
         } catch (error) {
             console.error('Polling error:', error);
@@ -997,15 +998,28 @@ function startFLPolling() {
                 resetRefreshButton();
                 showUploadSection();
                 showToast('Please upload your Netflix viewing history first.', 'error');
+            } else if (flStatus.status === 'aggregator_wait') {
+                stopPolling();
+                resetRefreshButton();
+                showError(flStatus.message || 'Waiting for aggregator to publish model files.', flStatus.error_type);
             } else if (flStatus.status === 'error') {
                 stopPolling();
                 resetRefreshButton();
+                
+                const errorType = flStatus.error_type;
+                const errorMessage = flStatus.message;
+                
                 // Check if error is related to missing viewing history
-                if (flStatus.message && flStatus.message.toLowerCase().includes('viewing history')) {
+                if (errorMessage && errorMessage.toLowerCase().includes('viewing history')) {
                     showUploadSection();
                     showToast('Please upload your Netflix viewing history.', 'error');
+                } else if (errorType === 'no_title_matches') {
+                    // Show upload section with hint to check CSV format
+                    showUploadSection();
+                    showToast('No matching titles found. Please check your CSV file or try re-downloading it from Netflix.', 'error');
                 } else {
-                    showError(flStatus.message || 'Training failed. Please try again.');
+                    // Show error with user-friendly message based on error type
+                    showError(errorMessage || 'Training failed. Please try again.', errorType);
                 }
             }
             
@@ -1059,10 +1073,32 @@ function showLoading(message) {
     elements.statusMessage().textContent = message;
 }
 
-function showError(message) {
+/**
+ * Get user-friendly error message based on error type
+ * @param {string} errorType - Error type from backend
+ * @param {string} originalMessage - Original error message
+ * @returns {string} User-friendly error message
+ */
+function getFriendlyErrorMessage(errorType, originalMessage) {
+    const errorMessages = {
+        'syftbox_not_running': 'Could not connect to SyftBox. Please ensure SyftBox is running on your machine and try again.',
+        'aggregator_not_initialized': 'The aggregator hasn\'t published model files yet. Please wait for the aggregator to initialize and try again.',
+        'aggregator_not_ready': 'The aggregator hasn\'t processed any data yet. Please wait for the aggregator to run and try again.',
+        'no_title_matches': 'No matching titles found in your viewing history. Please check that your Netflix viewing history CSV file is correctly formatted and contains valid show/movie titles. Try re-downloading your viewing history from Netflix.',
+        'vocabulary_error': 'Could not load the recommendation model vocabulary. Please try again later.',
+    };
+    
+    return errorMessages[errorType] || originalMessage || 'An unexpected error occurred. Please try again.';
+}
+
+function showError(message, errorType = null) {
     hideAllSections();
     elements.errorSection().classList.remove('hidden');
-    elements.errorMessage().textContent = message;
+    
+    // Get user-friendly message if error type is provided
+    const displayMessage = errorType ? getFriendlyErrorMessage(errorType, message) : message;
+    elements.errorMessage().textContent = displayMessage;
+    
     if (window.lucide) {
         lucide.createIcons();
     }

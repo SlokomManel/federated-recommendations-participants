@@ -238,14 +238,28 @@ def run_fine_tuning(profile: str = "profile_0", epsilon: float = 1.0):
         
         # Check if global model exists
         global_v_path = restricted_shared_folder / "global_V.npy"
+        vocab_path = restricted_shared_folder / "vocabulary.json"
+        
         if not global_v_path.exists():
+            # Differentiate between SyftBox not running vs aggregator not initialized
+            if not restricted_shared_folder.exists():
+                error_msg = "Could not find aggregator shared folder. Please ensure SyftBox is running."
+                error_type = "syftbox_not_running"
+            elif not vocab_path.exists():
+                error_msg = "Aggregator shared folder found but model files are missing. Please ensure SyftBox is running and the aggregator has been set up."
+                error_type = "syftbox_not_running"
+            else:
+                error_msg = "The aggregator hasn't processed any data yet. Please wait for the aggregator to run and try again."
+                error_type = "aggregator_not_ready"
+            
             fl_status = {
                 "status": "error",
-                "message": f"Global model not found at {global_v_path}. Aggregator may not be running.",
+                "error_type": error_type,
+                "message": error_msg,
                 "last_updated": datetime.now().isoformat(),
                 "last_fine_tuning": fl_status.get("last_fine_tuning"),
             }
-            logging.error(f"Global model not found: {global_v_path}")
+            logging.error(f"Global model not found: {global_v_path} - {error_msg}")
             return False
         
         # Check if we have ratings data
@@ -296,10 +310,20 @@ def run_fine_tuning(profile: str = "profile_0", epsilon: float = 1.0):
         return True
         
     except Exception as e:
-        logging.error(f"Error during fine-tuning: {e}")
+        error_str = str(e)
+        logging.error(f"Error during fine-tuning: {error_str}")
+        
+        # Parse error type from message if available
+        error_type = "error"
+        error_message = error_str
+        if error_str.startswith("no_title_matches:"):
+            error_type = "no_title_matches"
+            error_message = error_str.replace("no_title_matches: ", "")
+        
         fl_status = {
             "status": "error",
-            "message": str(e),
+            "error_type": error_type,
+            "message": error_message,
             "last_updated": datetime.now().isoformat(),
             "last_fine_tuning": fl_status.get("last_fine_tuning"),
         }
@@ -336,6 +360,31 @@ def run_full_fl_workflow(profile: str = "profile_0", epsilon: float = 1.0, click
         # Step 1: Setup environment
         restricted_shared_folder, restricted_public_folder, private_folder = setup_environment(profile)
         
+        # Step 1.5: Ensure aggregator has published model files before training
+        vocab_path = restricted_shared_folder / "vocabulary.json"
+        global_v_path = restricted_shared_folder / "global_V.npy"
+        
+        if not restricted_shared_folder.exists() or not vocab_path.exists() or not global_v_path.exists():
+            if not restricted_shared_folder.exists():
+                error_type = "syftbox_not_running"
+                error_msg = "Could not find aggregator shared folder. Please ensure SyftBox is running."
+            elif not vocab_path.exists():
+                error_type = "aggregator_not_initialized"
+                error_msg = "Vocabulary file not found. The aggregator hasn't initialized the model files yet. Please wait and try again."
+            else:
+                error_type = "aggregator_not_ready"
+                error_msg = "Global model not found. The aggregator hasn't processed any data yet. Please wait for the aggregator to run."
+            
+            fl_status = {
+                "status": "aggregator_wait",
+                "error_type": error_type,
+                "message": error_msg,
+                "last_updated": datetime.now().isoformat(),
+                "last_fine_tuning": fl_status.get("last_fine_tuning"),
+            }
+            logging.error(f"FL workflow blocked: {error_msg}")
+            return False
+        
         # Step 2: Get viewing history
         file_path, viewing_history = get_viewing_history(profile)
         
@@ -347,6 +396,18 @@ def run_full_fl_workflow(profile: str = "profile_0", epsilon: float = 1.0, click
                 "last_fine_tuning": fl_status.get("last_fine_tuning"),
             }
             logging.error("FL workflow failed: No viewing history found")
+            return False
+        
+        # Check if viewing history is empty (CSV with only headers or no valid entries)
+        if viewing_history.size == 0 or len(viewing_history) == 0:
+            fl_status = {
+                "status": "error",
+                "error_type": "no_title_matches",
+                "message": "Your viewing history file appears to be empty or contains no valid entries. Please upload a Netflix viewing history CSV with actual watch data.",
+                "last_updated": datetime.now().isoformat(),
+                "last_fine_tuning": fl_status.get("last_fine_tuning"),
+            }
+            logging.error("FL workflow failed: Viewing history is empty")
             return False
         
         # Step 2.5: Clear existing user models to prevent overfitting
@@ -372,10 +433,20 @@ def run_full_fl_workflow(profile: str = "profile_0", epsilon: float = 1.0, click
         return success
         
     except Exception as e:
-        logging.error(f"Error in FL workflow: {e}")
+        error_str = str(e)
+        logging.error(f"Error in FL workflow: {error_str}")
+        
+        # Parse error type from message if available
+        error_type = "error"
+        error_message = error_str
+        if error_str.startswith("no_title_matches:"):
+            error_type = "no_title_matches"
+            error_message = error_str.replace("no_title_matches: ", "")
+        
         fl_status = {
             "status": "error",
-            "message": str(e),
+            "error_type": error_type,
+            "message": error_message,
             "last_updated": datetime.now().isoformat(),
             "last_fine_tuning": fl_status.get("last_fine_tuning"),
         }

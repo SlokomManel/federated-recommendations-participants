@@ -179,15 +179,17 @@ def participant_fine_tuning(
     print(f"Participant has {len(final_ratings)} ratings, matched {len(train_data)} to vocabulary.")
     
     if not train_data:
-        # Provide helpful debugging info
+        # Provide helpful debugging info for logs
         sample_ratings = list(final_ratings.keys())[:5]
         sample_vocab = list(tv_vocab.keys())[:5]
+        print(f"DEBUG: No title matches found. Sample rating titles: {sample_ratings}")
+        print(f"DEBUG: Sample vocab titles: {sample_vocab}")
+        
+        # Raise a user-friendly error message
         raise ValueError(
-            f"No training items after mapping participant ratings to vocabulary. "
-            f"Ratings has {len(final_ratings)} items, vocabulary has {len(tv_vocab)} items. "
-            f"Sample rating titles: {sample_ratings}. "
-            f"Sample vocab titles: {sample_vocab}. "
-            f"Check if titles use different formatting or the vocabulary is outdated."
+            "no_title_matches: No matching titles found in your viewing history. "
+            "Please check that your Netflix viewing history CSV file is correctly formatted "
+            "and contains valid show/movie titles. Try re-downloading your viewing history from Netflix."
         )
 
     # Step 6: Perform local training
