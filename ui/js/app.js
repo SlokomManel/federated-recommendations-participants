@@ -1,5 +1,5 @@
 /**
- * Main Application Logic for Netflix Recommendations UI
+ * Main Application Logic for Federated Recommendations UI
  */
 
 // Application state
@@ -122,7 +122,7 @@ function declinePrivacy() {
  * Initialize the application
  */
 async function initApp() {
-    console.log('Initializing Netflix Recommendations App...');
+    console.log('Initializing Federated Recommendations App...');
     
     // Check privacy acceptance first
     if (!isPrivacyAccepted()) {

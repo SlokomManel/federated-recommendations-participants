@@ -1,5 +1,5 @@
 /**
- * API Communication Layer for Netflix Recommendations
+ * API Communication Layer for Federated Recommendations
  */
 
 const API_BASE_URL = '';
