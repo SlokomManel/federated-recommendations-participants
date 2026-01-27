@@ -1009,14 +1009,16 @@ function startFLPolling() {
                 const errorType = flStatus.error_type;
                 const errorMessage = flStatus.message;
                 
-                // Check if error is related to missing viewing history
-                if (errorMessage && errorMessage.toLowerCase().includes('viewing history')) {
+                // Handle no-title-match errors first (includes empty CSV)
+                if (errorType === 'no_title_matches') {
+                    showUploadSection();
+                    showToast(
+                        'No titles found in your CSV. Please try to re-download from Netflix and try again.',
+                        'error'
+                    );
+                } else if (errorMessage && errorMessage.toLowerCase().includes('viewing history')) {
                     showUploadSection();
                     showToast('Please upload your Netflix viewing history.', 'error');
-                } else if (errorType === 'no_title_matches') {
-                    // Show upload section with hint to check CSV format
-                    showUploadSection();
-                    showToast('No matching titles found. Please check your CSV file or try re-downloading it from Netflix.', 'error');
                 } else {
                     // Show error with user-friendly message based on error type
                     showError(errorMessage || 'Training failed. Please try again.', errorType);
@@ -1084,7 +1086,7 @@ function getFriendlyErrorMessage(errorType, originalMessage) {
         'syftbox_not_running': 'Could not connect to SyftBox. Please ensure SyftBox is running on your machine and try again.',
         'aggregator_not_initialized': 'The aggregator hasn\'t published model files yet. Please wait for the aggregator to initialize and try again.',
         'aggregator_not_ready': 'The aggregator hasn\'t processed any data yet. Please wait for the aggregator to run and try again.',
-        'no_title_matches': 'No matching titles found in your viewing history. Please check that your Netflix viewing history CSV file is correctly formatted and contains valid show/movie titles. Try re-downloading your viewing history from Netflix.',
+        'no_title_matches': 'No titles found in your CSV. Please try to re-download from Netflix and try again.',
         'vocabulary_error': 'Could not load the recommendation model vocabulary. Please try again later.',
     };
     
@@ -1125,7 +1127,7 @@ function showComputeSection() {
 
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 z-50 ${
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 z-50 max-w-sm w-auto whitespace-normal ${
         type === 'success' ? 'bg-green-600' : 'bg-red-600'
     } text-white flex items-center gap-2`;
     
