@@ -71,7 +71,7 @@ def prepare_training_data(user_id, tv_vocab, final_ratings):
 
 
 def perform_local_training(
-    train_data, initial_V, initial_U_u, alpha=0.01, lambda_reg=0.1, iterations=10
+    train_data, initial_V, initial_U_u, alpha=0.01, lambda_reg=0.1, iterations=20
 ):
     """
     Perform local training for the participant using BPR (FedBPR-style).
