@@ -104,6 +104,21 @@ If you have already installed the app, you don't need to run the installation sc
 uv run python app.py
 ```
 
+### Runtime configuration
+
+You can control defensive item-factor normalization (helps bound raw dot-product magnitudes) with environment variables:
+
+- `NORMALIZE_ITEM_FACTORS` (default: `true`) — enable runtime normalization of item vectors before scoring. Set to `false` to disable.
+- `ITEM_FACTOR_NORM_METHOD` (default: `l2`) — one of `l2` (unit row norms) or `scale_mean` (scale rows so mean norm equals `ITEM_FACTOR_NORM_TARGET`).
+- `ITEM_FACTOR_NORM_TARGET` (default: `1.0`) — used by `scale_mean` to set the target mean row norm.
+
+Example (disable normalization):
+
+```bash
+export NORMALIZE_ITEM_FACTORS=false
+uv run python app.py
+```
+
 ## Troubleshooting
 
 - **`uv` not found**: redo Step 0, then restart your terminal.

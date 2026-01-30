@@ -13,18 +13,45 @@ from src.core import get_private_path, get_shared_folder_path
 from src.config import DATA_DIR
 
 
-def get_recommendations_data(recommendation_list, df):
+from src.config import DATA_DIR, DISPLAY_SCORE_METHOD
+
+
+def _apply_display_normalization(scores, method):
+    """Return a list of normalized scores in [0,1] according to method."""
+    import numpy as _np
+    scores = _np.array(scores, dtype=float)
+    if method is None or method == "none":
+        return scores
+    if method == "sigmoid":
+        return 1 / (1 + _np.exp(-scores))
+    if method == "minmax":
+        if scores.size == 0:
+            return scores
+        min_s = float(scores.min())
+        max_s = float(scores.max())
+        if max_s - min_s == 0:
+            return _np.zeros_like(scores)
+        return (scores - min_s) / (max_s - min_s)
+    # Unknown method: return original
+    return scores
+
+
+def get_recommendations_data(recommendation_list, df, display_normalization=None):
     """Convert recommendation list to enriched data with metadata from DataFrame.
     
-    Uses augmented_titles.csv as data source with columns:
-    - title: Title name
-    - rating: Content rating (TV-MA, PG, etc.)
-    - tmdb_score: TMDB rating value (used instead of IMDB)
-    - cover_url: Poster image URL
+    display_normalization: None | 'sigmoid' | 'minmax' - applied per-user to scores for UI display
     """
     recommendations_data = []
+
+    # Prepare normalized display scores if requested
+    if display_normalization is None:
+        display_normalization = DISPLAY_SCORE_METHOD
+
+    raw_scores = [float(s) for _, _, s in recommendation_list]
+    display_scores = _apply_display_normalization(raw_scores, display_normalization)
+
     for i, (name, idx, score) in enumerate(recommendation_list):
-        print(f"\t{i+1} => {name}: {score:.4f}")
+        display_score = float(display_scores[i]) if i < len(display_scores) else None
 
         try:
             row = df[df["title"].str.strip() == name].iloc[0]
@@ -33,6 +60,18 @@ def get_recommendations_data(recommendation_list, df):
             continue
             
         safe_score = float(score) if not math.isnan(score) else 0.0
+
+        # Determine a user-friendly 'count' for the UI:
+        # Use absolute percent based on raw model score: raw_score * 100 when in [0,1], otherwise round raw_score.
+        if safe_score <= 1:
+            count = int(round(safe_score * 100))
+        else:
+            count = int(round(safe_score))
+        # Clamp to 0-100 for UI
+        count = max(0, min(100, count))
+
+        # Log console output: show raw score and computed count (absolute percent)
+        print(f"\t{i+1} => {name}: raw={safe_score:.4f}, count={count} (absolute percent based on raw_score)")
 
         # Get cover image from augmented_titles.csv
         img = row["cover_url"] if pd.notna(row.get("cover_url")) else ""
@@ -55,8 +94,8 @@ def get_recommendations_data(recommendation_list, df):
             "imdb": tmdb_score,  # Keep "imdb" key for UI compatibility, but use TMDB score
             "tmdb_score": tmdb_score,
             "img": img,
-            "count": int(safe_score),
-            "raw_score": safe_score
+            "count": count,
+            "raw_score": safe_score,
         }
         recommendations_data.append(entry)
     return recommendations_data
@@ -101,7 +140,8 @@ def local_recommendation(local_path, global_path, tv_vocab, exclude_watched=True
             logging.debug(f"Added {len(new_rows)} click history items to aggregated activity.")
 
     raw_recommendations, reranked_recommendations = compute_recommendations(
-        user_U, global_V, tv_vocab, user_aggregated_activity, exclude_watched=exclude_watched
+        user_U, global_V, tv_vocab, user_aggregated_activity, exclude_watched=exclude_watched,
+        score_normalization=DISPLAY_SCORE_METHOD
     )
 
     # Use augmented_titles.csv as the single source of data with semicolon separator

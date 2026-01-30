@@ -252,6 +252,15 @@ async def api_recommendations():
         enriched_raw = [enrich_recommendation(item) for item in raw_recommends]
         enriched_reranked = [enrich_recommendation(item) for item in reranked_recommends]
         
+        # Debug: log sample raw_score values to help diagnose UI percentage display
+        try:
+            sample_raw_scores = [ir.get('raw_score') for ir in enriched_raw[:10]]
+            sample_counts = [ir.get('count') for ir in enriched_raw[:10]]
+            logging.debug(f"Returning recommendations (sample raw_scores): {sample_raw_scores}")
+            logging.debug(f"Returning recommendations (sample counts): {sample_counts}")
+        except Exception as e:
+            logging.debug(f"Could not log sample scores: {e}")
+        
         return JSONResponse({
             "status": "success",
             "raw_recommendations": enriched_raw,

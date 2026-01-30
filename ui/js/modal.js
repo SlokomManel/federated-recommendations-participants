@@ -256,10 +256,22 @@ function populateModalContent(item, settings) {
             whySection.classList.remove('hidden');
             const whyText = document.getElementById('modal-why-text');
             if (whyText) {
-                // Generate a simple explanation based on score
-                const score = item.raw_score || 0;
-                const percentage = Math.min(100, Math.round(score * 10));
-                whyText.textContent = `This show has a ${percentage}% match score based on your viewing history and preferences. The recommendation is generated using federated learning from community patterns while keeping your data private.`;
+                // Debug: log item to console to inspect incoming item and counts
+                console.debug('Modal item debug', item);
+
+                // Prefer 'count' (0-100) if present; otherwise fall back to raw_score scaling
+                let percentage = 0;
+                if (typeof item.count === 'number' && !isNaN(item.count)) {
+                    percentage = Math.max(0, Math.min(100, Math.round(item.count)));
+                } else {
+                    const score = (item.raw_score || 0);
+                    if (score <= 1) {
+                        percentage = Math.max(0, Math.min(100, Math.round(score * 100)));
+                    } else {
+                        percentage = Math.max(0, Math.min(100, Math.round(score)));
+                    }
+                }
+                whyText.textContent = `This show has a ${percentage}% match score based on your viewing history and preferences. The recommendation is generated using federated learning from community patterns while keeping your data private.`; 
             }
         } else {
             whySection.classList.add('hidden');
