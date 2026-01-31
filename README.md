@@ -71,8 +71,8 @@ cd .\federated-recommendations
 ### macOS / Linux
 
 ```bash
-git clone https://github.com/oussama-romdhane/syftbox-netflix-participant
-cd federated-recommendations
+git clone https://github.com/SlokomManel/federated-recommendations-participants.git
+cd federated-recommendations-participants
 ```
 
 No `git`? You can also download the repo as a ZIP and extract it anywhere.
