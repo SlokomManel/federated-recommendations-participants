@@ -26,6 +26,8 @@ Then close/reopen your terminal so `uv` is on PATH.
 
 Download your Netflix viewing activity as a CSV file from your Netflix account. [See how to download your Netflix History](https://help.netflix.com/en/node/101917) 
 
+Note that you are free to delete movies that you do not want to upload to your App! Also, your movies will remain local/private and not shared as they are with the aggregator.  
+
 ## Step 2 — Install SyftBox (and keep it running)
 
 - **SyftBox home page**: `https://syftbox.net/`
