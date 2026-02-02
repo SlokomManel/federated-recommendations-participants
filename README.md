@@ -24,9 +24,7 @@ Then close/reopen your terminal so `uv` is on PATH.
 
 ## Step 1 — Prepare your Netflix viewing history
 
-1. Netflix → **Account**
-2. **Security & Privacy** → download/request your personal information
-3. Unzip the export and find your viewing activity CSV (often named like `NetflixViewingHistory.csv`)
+Download your Netflix viewing activity as a CSV file from your Netflix account. [See how to download your Netflix History](https://help.netflix.com/en/node/101917) 
 
 ## Step 2 — Install SyftBox (and keep it running)
 
