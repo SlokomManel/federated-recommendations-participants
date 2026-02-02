@@ -47,7 +47,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://syftbox.net/install.ps1 | iex
 ### macOS / Linux
 
 ```bash
-curl -LsSf https://syftbox.openmined.org/install.sh | sh
+curl -fsSL https://syftbox.net/install.sh | sh
 ```
 
 Desktop app: install from `https://syftbox.net/` (supports auto-update + autostart).
