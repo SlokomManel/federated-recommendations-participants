@@ -64,8 +64,8 @@ You can clone this application anywhere on your machine.
 ### Windows
 
 ```powershell
-git clone https://github.com/oussama-romdhane/syftbox-netflix-participant
-cd .\federated-recommendations
+git clone https://github.com/SlokomManel/federated-recommendations-participants.git
+cd .\federated-recommendations-participants
 ```
 
 ### macOS / Linux
