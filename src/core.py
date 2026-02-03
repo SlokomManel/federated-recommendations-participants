@@ -1,32 +1,54 @@
 """Core SyftBox client and path utilities."""
 
 import os
+from functools import lru_cache
 from pathlib import Path
 
 from syft_core import Client as SyftboxClient
-from syft_core import SyftClientConfig
 from syft_core.permissions import SyftPermission
 
 from src.config import APP_NAME, AGGREGATOR_DATASITE
+from src.preflight import PreflightError, require_preflight
 
-# Initialize SyftBox client
-config = SyftClientConfig.load()
-client = SyftboxClient(config)
+
+@lru_cache(maxsize=1)
+def get_client() -> SyftboxClient:
+    """
+    Lazily initialize the SyftBox client.
+
+    This avoids crashing at import time, and ensures we can provide friendly,
+    actionable diagnostics when SyftBox isn't configured correctly.
+    """
+    require_preflight()
+
+    from syft_core import SyftClientConfig  # local import for cleaner failures
+
+    config = SyftClientConfig.load()
+    return SyftboxClient(config)
 
 
 def get_private_path(profile: str = "profile_0"):
     """Get the participant's private data path."""
+    client = get_client()
     return Path(client.config.data_dir) / "private" / APP_NAME / profile
 
 
 def get_shared_folder_path():
     """Get the shared folder path from the aggregator."""
+    if not AGGREGATOR_DATASITE:
+        raise PreflightError(
+            "Missing `AGGREGATOR_DATASITE`.\n\n"
+            "Fix:\n"
+            "- Set `AGGREGATOR_DATASITE` in `.env` to the aggregator's datasite email.\n"
+        )
+    client = get_client()
     datasites_path = Path(client.datasite_path.parent)
     return datasites_path / AGGREGATOR_DATASITE / "app_data" / APP_NAME / "shared"
 
 
 def get_restricted_public_folder(profile: str = "profile_0"):
     """Get the restricted public folder path (aggregator can read delta_V from here)."""
+    client = get_client()
     return client.app_data(APP_NAME) / profile
 
 
@@ -41,6 +63,15 @@ def setup_environment(profile: str = "profile_0"):
     Returns:
         tuple: (restricted_shared_folder, restricted_public_folder, private_folder)
     """
+    if not AGGREGATOR_DATASITE:
+        raise PreflightError(
+            "Missing `AGGREGATOR_DATASITE`.\n\n"
+            "Fix:\n"
+            "- Set `AGGREGATOR_DATASITE` in `.env` to the aggregator's datasite email.\n"
+        )
+
+    client = get_client()
+
     # Private folder (outside datasite path for security)
     private_folder = get_private_path(profile)
     private_folder.mkdir(parents=True, exist_ok=True)
@@ -66,4 +97,5 @@ def setup_environment(profile: str = "profile_0"):
 
 def get_datasites_path():
     """Get the datasites path."""
+    client = get_client()
     return Path(client.datasite_path.parent)

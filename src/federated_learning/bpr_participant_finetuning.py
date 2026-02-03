@@ -1,6 +1,7 @@
 """BPR participant fine-tuning for federated learning."""
 
 import copy
+import logging
 import os
 import random
 
@@ -48,8 +49,8 @@ def save_training_results(user_id, private_path, restricted_path, V, delta_V, U_
     user_matrix_path = os.path.join(user_private_path, "U.npy")
     np.save(user_matrix_path, U_u)
 
-    print(f"Saved private training results for user: {user_id} at {user_private_path}.")
-    print(f"Saved delta updates for user: {user_id} at {user_restricted_path}.")
+    logging.info(f"Saved private training results for user: {user_id} at {user_private_path}.")
+    logging.info(f"Saved delta updates for user: {user_id} at {user_restricted_path}.")
 
 
 def prepare_training_data(user_id, tv_vocab, final_ratings):
@@ -161,7 +162,7 @@ def participant_fine_tuning(
     # Step 1: Load vocabulary from shared folder
     vocabulary_path = os.path.join(global_path, "vocabulary.json")
     tv_vocab = load_tv_vocabulary(vocabulary_path)
-    print(f"Loaded vocabulary from {vocabulary_path}.")
+    logging.info(f"Loaded vocabulary from {vocabulary_path}.")
 
     # Step 2: Load global item factors
     V = load_global_item_factors(global_path)
@@ -176,14 +177,14 @@ def participant_fine_tuning(
 
     # Step 5: Prepare training data (uses fuzzy matching)
     train_data = prepare_training_data(user_id, tv_vocab, final_ratings)
-    print(f"Participant has {len(final_ratings)} ratings, matched {len(train_data)} to vocabulary.")
+    logging.info(f"Participant has {len(final_ratings)} ratings, matched {len(train_data)} to vocabulary.")
     
     if not train_data:
         # Provide helpful debugging info for logs
         sample_ratings = list(final_ratings.keys())[:5]
         sample_vocab = list(tv_vocab.keys())[:5]
-        print(f"DEBUG: No title matches found. Sample rating titles: {sample_ratings}")
-        print(f"DEBUG: Sample vocab titles: {sample_vocab}")
+        logging.debug(f"No title matches found. Sample rating titles: {sample_ratings}")
+        logging.debug(f"Sample vocab titles: {sample_vocab}")
         
         # Raise a user-friendly error message
         raise ValueError(
@@ -228,5 +229,5 @@ def participant_fine_tuning(
             user_id, sorted_item_ids, delta_norms_before, delta_norms_after
         )
 
-    print(f"Participant {user_id} finished training and updated item factors.")
+    logging.info(f"Participant {user_id} finished training and updated item factors.")
     return dp_deltas

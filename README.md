@@ -52,6 +52,16 @@ curl -fsSL https://syftbox.net/install.sh | sh
 
 Desktop app: install from `https://syftbox.net/` (supports auto-update + autostart).
 
+### First-time login check
+
+On first install, SyftBox typically prompts you to log in with your email/identity.
+
+If you **didn't** get prompted, run this manually to make sure you're logged in:
+
+```bash
+syftbox login
+```
+
 ### Keeping SyftBox running
 
 - **Simplest**: keep SyftBox open in a **separate terminal/window** while running the app.
@@ -104,6 +114,8 @@ If you have already installed the app, you don't need to run the installation sc
 uv run python app.py
 ```
 
+**Note:** The app performs a check on startup. If SyftBox is not running or is not properly configured, the app will exit and request you fix your syftbox installation.
+
 ### Runtime configuration
 
 You can control defensive item-factor normalization (helps bound raw dot-product magnitudes) with environment variables:
@@ -123,3 +135,13 @@ uv run python app.py
 
 - **`uv` not found**: redo Step 0, then restart your terminal.
 - **macOS/Linux “Permission denied”**: run `chmod +x install.sh`.
+- **Not sure if you're logged in to SyftBox**: run `syftbox login` (it should prompt you if you're not logged in).
+- **SyftBox config not found / SyftBox not ready**: the installer now runs a check and will stop with instructions if syftbox is not properly configured. Common fixes:
+  - Install SyftBox from `https://syftbox.net/`
+  - Start SyftBox and complete setup/login (email/identity)
+  - Run `syftbox login` to verify you are logged in
+  - Close and reopen your terminal, then rerun the install script
+  - Keep SyftBox running while using this app
+- **`user None is not a valid email or *`**: your `.env` is missing `AGGREGATOR_DATASITE` (or it’s empty/invalid).
+  - Open `.env.example` and copy paste it's contents to .env
+  - Then restart the app.

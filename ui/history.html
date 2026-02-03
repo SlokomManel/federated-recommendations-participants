@@ -1168,10 +1168,20 @@
                         clearInterval(enhancePollingInterval);
                         enhancePollingInterval = null;
                         resetEnhanceButton();
-                        showHistoryToast('Enhancement failed: ' + (status.message || 'Unknown error'), 'error');
+                        // Show detailed message for prerequisite errors
+                        const errorMessage = status.error_type === 'prerequisite_not_ready' 
+                            ? status.message 
+                            : ('Enhancement failed: ' + (status.message || 'Unknown error'));
+                        showHistoryToast(errorMessage, 'error');
                     }
                 } catch (error) {
                     console.error('Polling error:', error);
+                    clearInterval(enhancePollingInterval);
+                    enhancePollingInterval = null;
+                    resetEnhanceButton();
+                    // Show error from backend if available
+                    const errorMessage = error.body?.message || 'Lost connection to server. Please check if the server is running.';
+                    showHistoryToast(errorMessage, 'error');
                 }
             }, 3000);
         }

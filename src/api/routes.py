@@ -10,10 +10,11 @@ from fastapi.responses import JSONResponse
 
 from src.config import APP_NAME, AGGREGATOR_DATASITE
 from src.core import (
-    client,
+    get_client,
     get_private_path,
     setup_environment,
 )
+from src.preflight import PreflightError, run_preflight
 from src.services.enrichment import enrich_recommendation
 from src.services.io import recommendations_exist, load_recommendations
 from src.services.recommendations import (
@@ -30,6 +31,23 @@ from src.services.federated_learning import (
 )
 
 router = APIRouter(prefix="/api")
+
+
+def _preflight_error_response(e: Exception) -> JSONResponse:
+    """
+    Convert setup/runtime prerequisite failures into actionable API responses.
+
+    We use 503 so the UI can treat it as a dependency-not-ready condition.
+    """
+    return JSONResponse(
+        {
+            "status": "error",
+            "error_type": "prerequisite_not_ready",
+            "message": str(e),
+            "timestamp": datetime.now().isoformat(),
+        },
+        status_code=503,
+    )
 
 
 def _ensure_csv_has_header(csv_file_path: Path, header_row: list[str]) -> None:
@@ -74,23 +92,40 @@ def _ensure_csv_has_header(csv_file_path: Path, header_row: list[str]) -> None:
 @router.get("/health")
 async def api_health():
     """Health check endpoint."""
-    return JSONResponse({
-        "status": "healthy",
-        "app_name": APP_NAME,
-        "timestamp": datetime.now().isoformat()
-    })
+    # Always return healthy if the server is running, but include preflight info
+    # so users can see exactly what is missing (SyftBox config, env vars, etc).
+    pf = run_preflight()
+    return JSONResponse(
+        {
+            "status": "healthy",
+            "app_name": APP_NAME,
+            "timestamp": datetime.now().isoformat(),
+            "preflight_ok": pf.ok,
+            "preflight_message": pf.message,
+            "preflight_checks": pf.checks,
+        }
+    )
 
 
 @router.get("/data/status")
 async def api_data_status():
     """Check if Netflix viewing history exists."""
-    data_status = check_viewing_history_exists()
-    return JSONResponse({
-        "has_data": data_status["exists"],
-        "source": data_status["source"],
-        "path": data_status["path"],
-        "timestamp": datetime.now().isoformat()
-    })
+    try:
+        data_status = check_viewing_history_exists()
+        return JSONResponse(
+            {
+                "has_data": data_status["exists"],
+                "source": data_status["source"],
+                "path": data_status["path"],
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+    except (PreflightError, Exception) as e:
+        # PreflightError is most important; other exceptions still benefit from
+        # a consistent dependency-not-ready surface for the UI.
+        if isinstance(e, PreflightError):
+            return _preflight_error_response(e)
+        raise
 
 
 @router.post("/data/upload")
@@ -101,6 +136,9 @@ async def api_upload_history(file: UploadFile = File(...)):
     Validates the CSV has a "Title" column and saves it to the private path.
     """
     try:
+        # Ensure SyftBox + app config are ready (private path depends on SyftBox data_dir)
+        _ = get_client()
+
         # Validate file type
         if not file.filename.endswith('.csv'):
             return JSONResponse({
@@ -156,6 +194,8 @@ async def api_upload_history(file: UploadFile = File(...)):
             "timestamp": datetime.now().isoformat()
         })
         
+    except PreflightError as e:
+        return _preflight_error_response(e)
     except UnicodeDecodeError:
         return JSONResponse({
             "status": "error",
@@ -172,69 +212,86 @@ async def api_upload_history(file: UploadFile = File(...)):
 @router.get("/status")
 async def api_status():
     """Check if recommendations are available and computation status."""
-    has_recommendations = recommendations_exist()
-    computation_status = get_computation_status()
-    fl_status = get_fl_status()
-    data_status = check_viewing_history_exists()
-    has_viewing_history = data_status["exists"]
-    
-    # FL workflow status takes precedence over simple computation
-    if fl_status["status"] in ["running", "fine_tuning"]:
-        return JSONResponse({
-            "status": fl_status["status"],
-            "has_recommendations": has_recommendations,
-            "has_viewing_history": has_viewing_history,
-            "message": fl_status["message"],
-            "last_updated": fl_status["last_updated"]
-        })
-    
-    # Check for FL errors
-    if fl_status["status"] == "error":
-        return JSONResponse({
-            "status": "error",
-            "error_type": fl_status.get("error_type", "error"),
-            "has_recommendations": has_recommendations,
-            "has_viewing_history": has_viewing_history,
-            "message": fl_status["message"],
-            "last_updated": fl_status["last_updated"]
-        })
-    
-    if computation_status["status"] == "computing":
-        return JSONResponse({
-            "status": "computing",
-            "has_recommendations": has_recommendations,
-            "has_viewing_history": has_viewing_history,
-            "message": computation_status["message"],
-            "last_updated": computation_status["last_updated"]
-        })
-    
-    # Check for computation errors
-    if computation_status["status"] == "error":
-        return JSONResponse({
-            "status": "error",
-            "error_type": computation_status.get("error_type", "error"),
-            "has_recommendations": has_recommendations,
-            "has_viewing_history": has_viewing_history,
-            "message": computation_status["message"],
-            "last_updated": computation_status["last_updated"]
-        })
-    
-    if has_recommendations:
-        return JSONResponse({
-            "status": "ready",
-            "has_recommendations": True,
-            "has_viewing_history": has_viewing_history,
-            "message": "Recommendations are available",
-            "last_updated": computation_status.get("last_updated")
-        })
-    else:
-        return JSONResponse({
-            "status": "pending",
-            "has_recommendations": False,
-            "has_viewing_history": has_viewing_history,
-            "message": "No recommendations available. Trigger computation." if has_viewing_history else "No viewing history found. Please upload your Netflix data.",
-            "last_updated": None
-        })
+    try:
+        has_recommendations = recommendations_exist()
+        computation_status = get_computation_status()
+        fl_status = get_fl_status()
+        data_status = check_viewing_history_exists()
+        has_viewing_history = data_status["exists"]
+
+        # FL workflow status takes precedence over simple computation
+        if fl_status["status"] in ["running", "fine_tuning"]:
+            return JSONResponse(
+                {
+                    "status": fl_status["status"],
+                    "has_recommendations": has_recommendations,
+                    "has_viewing_history": has_viewing_history,
+                    "message": fl_status["message"],
+                    "last_updated": fl_status["last_updated"],
+                }
+            )
+
+        # Check for FL errors
+        if fl_status["status"] == "error":
+            return JSONResponse(
+                {
+                    "status": "error",
+                    "error_type": fl_status.get("error_type", "error"),
+                    "has_recommendations": has_recommendations,
+                    "has_viewing_history": has_viewing_history,
+                    "message": fl_status["message"],
+                    "last_updated": fl_status["last_updated"],
+                }
+            )
+
+        if computation_status["status"] == "computing":
+            return JSONResponse(
+                {
+                    "status": "computing",
+                    "has_recommendations": has_recommendations,
+                    "has_viewing_history": has_viewing_history,
+                    "message": computation_status["message"],
+                    "last_updated": computation_status["last_updated"],
+                }
+            )
+
+        # Check for computation errors
+        if computation_status["status"] == "error":
+            return JSONResponse(
+                {
+                    "status": "error",
+                    "error_type": computation_status.get("error_type", "error"),
+                    "has_recommendations": has_recommendations,
+                    "has_viewing_history": has_viewing_history,
+                    "message": computation_status["message"],
+                    "last_updated": computation_status["last_updated"],
+                }
+            )
+
+        if has_recommendations:
+            return JSONResponse(
+                {
+                    "status": "ready",
+                    "has_recommendations": True,
+                    "has_viewing_history": has_viewing_history,
+                    "message": "Recommendations are available",
+                    "last_updated": computation_status.get("last_updated"),
+                }
+            )
+
+        return JSONResponse(
+            {
+                "status": "pending",
+                "has_recommendations": False,
+                "has_viewing_history": has_viewing_history,
+                "message": "No recommendations available. Trigger computation."
+                if has_viewing_history
+                else "No viewing history found. Please upload your Netflix data.",
+                "last_updated": None,
+            }
+        )
+    except PreflightError as e:
+        return _preflight_error_response(e)
 
 
 @router.get("/recommendations")
@@ -247,6 +304,7 @@ async def api_recommendations():
         }, status_code=404)
     
     try:
+        client = get_client()
         raw_recommends, reranked_recommends = load_recommendations()
         
         enriched_raw = [enrich_recommendation(item) for item in raw_recommends]
@@ -268,6 +326,8 @@ async def api_recommendations():
             "user_email": client.email,
             "timestamp": datetime.now().isoformat()
         })
+    except PreflightError as e:
+        return _preflight_error_response(e)
     except Exception as e:
         logging.error(f"Error fetching recommendations: {e}")
         return JSONResponse({
@@ -331,35 +391,44 @@ async def api_movie_details(movie_id: int):
 @router.post("/recommendations/compute")
 async def api_compute_recommendations(background_tasks: BackgroundTasks, data: dict = None):
     """Trigger recommendation computation in the background."""
-    status = get_computation_status()
-    
-    if status["status"] == "computing":
-        return JSONResponse({
-            "status": "already_computing",
-            "message": "Computation is already in progress",
-            "last_updated": status["last_updated"]
-        })
-    
-    click_history = []
-    if data and data.get("click_history"):
-        click_history = data.get("click_history", [])
-        logging.info(f"Received {len(click_history)} items from click history")
-    
-    set_pending_click_history(click_history)
-    background_tasks.add_task(run_recommendation_computation)
-    
-    return JSONResponse({
-        "status": "started",
-        "message": "Recommendation computation started in background",
-        "click_history_items": len(click_history),
-        "last_updated": datetime.now().isoformat()
-    })
+    try:
+        _ = get_client()
+        status = get_computation_status()
+
+        if status["status"] == "computing":
+            return JSONResponse(
+                {
+                    "status": "already_computing",
+                    "message": "Computation is already in progress",
+                    "last_updated": status["last_updated"],
+                }
+            )
+
+        click_history = []
+        if data and data.get("click_history"):
+            click_history = data.get("click_history", [])
+            logging.info(f"Received {len(click_history)} items from click history")
+
+        set_pending_click_history(click_history)
+        background_tasks.add_task(run_recommendation_computation)
+
+        return JSONResponse(
+            {
+                "status": "started",
+                "message": "Recommendation computation started in background",
+                "click_history_items": len(click_history),
+                "last_updated": datetime.now().isoformat(),
+            }
+        )
+    except PreflightError as e:
+        return _preflight_error_response(e)
 
 
 @router.post("/watchlist")
 async def api_watchlist(data: dict):
     """Record will/won't watch action for a recommendation."""
     try:
+        client = get_client()
         title = data.get("title", "")
         action = data.get("action", "")
         use_reranked = data.get("useReranked", False)
@@ -398,7 +467,8 @@ async def api_watchlist(data: dict):
             "message": f"Recorded '{action}' for '{title}'",
             "timestamp": timestamp
         })
-        
+    except PreflightError as e:
+        return _preflight_error_response(e)
     except Exception as e:
         logging.error(f"Error recording watchlist action: {e}")
         return JSONResponse({
@@ -410,17 +480,24 @@ async def api_watchlist(data: dict):
 @router.get("/user")
 async def api_user():
     """Get current user information."""
-    return JSONResponse({
-        "email": client.email,
-        "app_name": APP_NAME,
-        "timestamp": datetime.now().isoformat()
-    })
+    try:
+        client = get_client()
+        return JSONResponse(
+            {
+                "email": client.email,
+                "app_name": APP_NAME,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+    except PreflightError as e:
+        return _preflight_error_response(e)
 
 
 @router.post("/choice")
 async def api_choice(data: dict):
     """Record user's choice from recommendations."""
     try:
+        client = get_client()
         raw_recommends, reranked_recommends = load_recommendations()
         timestamp = datetime.now().isoformat()
         
@@ -455,7 +532,8 @@ async def api_choice(data: dict):
             "status": "success",
             "message": f"Received choice from {column} (ID: {data.get('id')} - {title}, page {page})"
         })
-        
+    except PreflightError as e:
+        return _preflight_error_response(e)
     except Exception as e:
         logging.error(f"Error recording choice: {e}")
         return JSONResponse({
@@ -468,6 +546,7 @@ async def api_choice(data: dict):
 async def api_feedback(data: dict):
     """Submit user feedback (rating and optional text)."""
     try:
+        client = get_client()
         rating = data.get("rating", 0)
         feedback_text = data.get("feedback", "")
         timestamp = data.get("timestamp", datetime.now().isoformat())
@@ -501,7 +580,8 @@ async def api_feedback(data: dict):
             "status": "success",
             "message": "Thank you for your feedback!"
         })
-        
+    except PreflightError as e:
+        return _preflight_error_response(e)
     except Exception as e:
         logging.error(f"Error recording feedback: {e}")
         return JSONResponse({
@@ -518,6 +598,7 @@ async def api_opt_out(data: dict):
     Stored privately in the restricted interaction logs folder for aggregator read access.
     """
     try:
+        client = get_client()
         reason = data.get("reason", "") or ""
         user_message = data.get("user_message", "") or ""
         timestamp = data.get("timestamp", datetime.now().isoformat())
@@ -542,6 +623,8 @@ async def api_opt_out(data: dict):
             "status": "success",
             "message": "Opt-out recorded"
         })
+    except PreflightError as e:
+        return _preflight_error_response(e)
     except Exception as e:
         logging.error(f"Error recording opt-out: {e}")
         return JSONResponse({
@@ -570,6 +653,7 @@ async def api_settings_log(data: dict):
         showWatchlistStatus (bool): Show will/won't watch badges
     """
     try:
+        client = get_client()
         timestamp = datetime.now().isoformat()
         
         # Extract settings values (default to True except useReranked)
@@ -619,6 +703,8 @@ async def api_settings_log(data: dict):
             "message": "Settings logged",
             "timestamp": timestamp
         })
+    except PreflightError as e:
+        return _preflight_error_response(e)
     except Exception as e:
         logging.error(f"Error logging settings: {e}")
         return JSONResponse({
@@ -632,14 +718,18 @@ async def api_settings_log(data: dict):
 @router.get("/fl/status")
 async def api_fl_status():
     """Get federated learning status."""
-    status = get_fl_status()
-    needs_training = check_fine_tuning_needed()
-    
-    return JSONResponse({
-        **status,
-        "needs_fine_tuning": needs_training,
-        "timestamp": datetime.now().isoformat()
-    })
+    try:
+        status = get_fl_status()
+        needs_training = check_fine_tuning_needed()
+        return JSONResponse(
+            {
+                **status,
+                "needs_fine_tuning": needs_training,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+    except PreflightError as e:
+        return _preflight_error_response(e)
 
 
 @router.get("/fl/global-v-info")
@@ -655,25 +745,32 @@ async def api_global_v_info():
         last_modified: ISO timestamp of the file's last modification time
         path: File path (for debugging)
     """
-    profile = "profile_0"
-    restricted_shared_folder, _, _ = setup_environment(profile)
-    global_v_path = restricted_shared_folder / "global_V.npy"
+    try:
+        profile = "profile_0"
+        restricted_shared_folder, _, _ = setup_environment(profile)
+        global_v_path = restricted_shared_folder / "global_V.npy"
     
-    if global_v_path.exists():
-        mtime = global_v_path.stat().st_mtime
-        return JSONResponse({
-            "exists": True,
-            "last_modified": datetime.fromtimestamp(mtime).isoformat(),
-            "path": str(global_v_path),
-            "timestamp": datetime.now().isoformat()
-        })
-    
-    return JSONResponse({
-        "exists": False,
-        "last_modified": None,
-        "path": str(global_v_path),
-        "timestamp": datetime.now().isoformat()
-    })
+        if global_v_path.exists():
+            mtime = global_v_path.stat().st_mtime
+            return JSONResponse(
+                {
+                    "exists": True,
+                    "last_modified": datetime.fromtimestamp(mtime).isoformat(),
+                    "path": str(global_v_path),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
+
+        return JSONResponse(
+            {
+                "exists": False,
+                "last_modified": None,
+                "path": str(global_v_path),
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+    except PreflightError as e:
+        return _preflight_error_response(e)
 
 
 @router.post("/fl/fine-tune")

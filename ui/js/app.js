@@ -195,6 +195,13 @@ async function checkStatusAndLoad() {
         const status = await NetflixAPI.getStatus();
         console.log('Status:', status);
         
+        // Check for error status first (e.g., prerequisite_not_ready from SyftBox issues)
+        if (status.status === 'error') {
+            console.log('Backend returned error:', status);
+            showError(status.message, status.error_type);
+            return;
+        }
+        
         // First check if viewing history exists
         if (!status.has_viewing_history) {
             console.log('No viewing history found, showing upload section...');
@@ -959,11 +966,18 @@ function startPolling() {
                 await loadAndDisplayRecommendations();
             } else if (status.status === 'error') {
                 stopPolling();
+                resetRefreshButton();
                 const errorType = status.error_type;
                 showError(status.message || 'Computation failed.', errorType);
             }
         } catch (error) {
             console.error('Polling error:', error);
+            stopPolling();
+            resetRefreshButton();
+            // Show error from backend if available, otherwise show generic message
+            const errorMessage = error.body?.message || 'Lost connection to server. Please check if the server is running and try again.';
+            const errorType = error.body?.error_type || null;
+            showError(errorMessage, errorType);
         }
     }, 3000);
 }
@@ -1030,6 +1044,12 @@ function startFLPolling() {
             }
         } catch (error) {
             console.error('FL Polling error:', error);
+            stopPolling();
+            resetRefreshButton();
+            // Show error from backend if available, otherwise show generic message
+            const errorMessage = error.body?.message || 'Lost connection to server. Please check if the server is running and try again.';
+            const errorType = error.body?.error_type || null;
+            showError(errorMessage, errorType);
         }
     }, 3000);
 }
@@ -1088,7 +1108,13 @@ function getFriendlyErrorMessage(errorType, originalMessage) {
         'aggregator_not_ready': 'The aggregator hasn\'t processed any data yet. Please wait for the aggregator to run and try again.',
         'no_title_matches': 'No titles found in your CSV. Please try to re-download from Netflix and try again.',
         'vocabulary_error': 'Could not load the recommendation model vocabulary. Please try again later.',
+        'prerequisite_not_ready': 'SyftBox is not properly configured. Please check your SyftBox installation and ensure it is running.',
     };
+    
+    // For prerequisite_not_ready, show the detailed message from backend (it has helpful instructions)
+    if (errorType === 'prerequisite_not_ready' && originalMessage) {
+        return originalMessage;
+    }
     
     return errorMessages[errorType] || originalMessage || 'An unexpected error occurred. Please try again.';
 }

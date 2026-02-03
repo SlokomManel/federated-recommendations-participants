@@ -71,7 +71,7 @@ def get_recommendations_data(recommendation_list, df, display_normalization=None
         count = max(0, min(100, count))
 
         # Log console output: show raw score and computed count (absolute percent)
-        print(f"\t{i+1} => {name}: raw={safe_score:.4f}, count={count} (absolute percent based on raw_score)")
+        logging.debug(f"{i+1} => {name}: raw={safe_score:.4f}, count={count} (absolute percent based on raw_score)")
 
         # Get cover image from augmented_titles.csv
         img = row["cover_url"] if pd.notna(row.get("cover_url")) else ""
@@ -149,12 +149,12 @@ def local_recommendation(local_path, global_path, tv_vocab, exclude_watched=True
     try:
         df = pd.read_csv(csv_file_path, sep=';')
     except Exception as e:
-        print(f"> Error: Unable to read CSV from {csv_file_path}. Error: {e}")
+        logging.error(f"Unable to read CSV from {csv_file_path}. Error: {e}")
         return None, None
 
-    print("(Unprocessed) Recommended based on most recently watched:")
+    logging.info("(Unprocessed) Recommended based on most recently watched:")
     raw_data = get_recommendations_data(raw_recommendations, df)
-    print("(Re-ranked) Recommended based on most recently watched:")
+    logging.info("(Re-ranked) Recommended based on most recently watched:")
     reranked_data = get_recommendations_data(reranked_recommendations, df) 
 
     return raw_data, reranked_data

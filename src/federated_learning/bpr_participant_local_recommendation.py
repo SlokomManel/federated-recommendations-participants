@@ -100,7 +100,7 @@ def compute_recommendations(
         if int(week) == recent_week
     ]
     recent_item_ids = [tv_vocab[title] for title in recent_items if title in tv_vocab]
-    print(f"For week (of all years) {recent_week}, watched n_shows=: {len(recent_items)}")
+    logging.info(f"For week (of all years) {recent_week}, watched n_shows=: {len(recent_items)}")
 
     U_recent = user_U
 

@@ -10,9 +10,6 @@ const API_BASE_URL = '';
  */
 async function getStatus() {
     const response = await fetch(`${API_BASE_URL}/api/status`);
-    if (!response.ok) {
-        throw new Error(`Status check failed: ${response.statusText}`);
-    }
     return response.json();
 }
 
@@ -37,9 +34,6 @@ async function getRecommendations() {
  */
 async function getDataStatus() {
     const response = await fetch(`${API_BASE_URL}/api/data/status`);
-    if (!response.ok) {
-        throw new Error(`Data status check failed: ${response.statusText}`);
-    }
     return response.json();
 }
 
@@ -130,9 +124,6 @@ async function submitWatchlistAction(id, title, action, useReranked = false, ran
  */
 async function getUser() {
     const response = await fetch(`${API_BASE_URL}/api/user`);
-    if (!response.ok) {
-        throw new Error(`Failed to get user info: ${response.statusText}`);
-    }
     return response.json();
 }
 
@@ -142,9 +133,6 @@ async function getUser() {
  */
 async function getFLStatus() {
     const response = await fetch(`${API_BASE_URL}/api/fl/status`);
-    if (!response.ok) {
-        throw new Error(`FL status check failed: ${response.statusText}`);
-    }
     return response.json();
 }
 
@@ -155,9 +143,6 @@ async function getFLStatus() {
  */
 async function getGlobalVInfo() {
     const response = await fetch(`${API_BASE_URL}/api/fl/global-v-info`);
-    if (!response.ok) {
-        throw new Error(`Global V info check failed: ${response.statusText}`);
-    }
     return response.json();
 }
 
@@ -211,10 +196,6 @@ async function recomputeRecommendations() {
         },
         body: JSON.stringify({})
     });
-    
-    if (!response.ok) {
-        throw new Error(`Failed to recompute recommendations: ${response.statusText}`);
-    }
     return response.json();
 }
 
@@ -223,7 +204,6 @@ async function recomputeRecommendations() {
  * This uses click history to augment training data before fine-tuning
  * @param {Array} clickHistory - Array of clicked items to enhance training
  * @returns {Promise<Object>} Result of starting FL workflow
- * @throws {Error} With 'no_viewing_history' in message if viewing history not found
  */
 async function triggerRefresh(clickHistory = null) {
     const body = {
@@ -248,17 +228,13 @@ async function triggerRefresh(clickHistory = null) {
         body: JSON.stringify(body)
     });
     
-    // Parse the response body to get status information
     const result = await response.json();
     
-    // Check for no_viewing_history error (400 status code)
-    if (!response.ok) {
-        if (result.status === 'no_viewing_history') {
-            const error = new Error('no_viewing_history: ' + result.message);
-            error.status = 'no_viewing_history';
-            throw error;
-        }
-        throw new Error(result.message || `Failed to trigger refresh: ${response.statusText}`);
+    // Check for no_viewing_history error returned as JSON
+    if (result.status === 'no_viewing_history') {
+        const error = new Error('no_viewing_history: ' + result.message);
+        error.status = 'no_viewing_history';
+        throw error;
     }
     
     return result;

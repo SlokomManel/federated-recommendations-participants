@@ -47,6 +47,13 @@ Write-Host "Installing dependencies..."
 uv pip install -e .
 
 Write-Host ""
+Write-Host "Running pre-flight checks (SyftBox + config)..."
+uv run python -m src.preflight
+if ($LASTEXITCODE -ne 0) {
+  throw "Pre-flight checks failed. Please follow the instructions above, then re-run .\install.ps1"
+}
+
+Write-Host ""
 Write-Host "Starting FastAPI server on http://0.0.0.0:8082"
 uv run python app.py
 

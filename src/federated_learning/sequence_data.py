@@ -1,6 +1,7 @@
 """Sequence data processing for Netflix viewing history."""
 
 import json
+import logging
 import os
 import re
 from datetime import datetime
@@ -85,6 +86,6 @@ def create_view_counts_vector(restricted_shared_folder, aggregated_data: pd.Data
             sparse_vector[row["ID"]] += row["Total_Views"]
 
     unmatched_titles = aggregated_data[aggregated_data["ID"] == -1]["show"].tolist()
-    print(">> (create_view_counts_vector) Unmatched Titles:", unmatched_titles)
+    logging.info(f"(create_view_counts_vector) Unmatched Titles: {unmatched_titles}")
 
     return sparse_vector

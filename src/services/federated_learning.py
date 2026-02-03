@@ -316,6 +316,13 @@ def run_fine_tuning(profile: str = "profile_0", epsilon: float = 1.0):
         # Parse error type from message if available
         error_type = "error"
         error_message = error_str
+        try:
+            from src.preflight import PreflightError
+
+            if isinstance(e, PreflightError):
+                error_type = "prerequisite_not_ready"
+        except Exception:
+            pass
         if error_str.startswith("no_title_matches:"):
             error_type = "no_title_matches"
             error_message = error_str.replace("no_title_matches: ", "")
@@ -439,6 +446,13 @@ def run_full_fl_workflow(profile: str = "profile_0", epsilon: float = 1.0, click
         # Parse error type from message if available
         error_type = "error"
         error_message = error_str
+        try:
+            from src.preflight import PreflightError
+
+            if isinstance(e, PreflightError):
+                error_type = "prerequisite_not_ready"
+        except Exception:
+            pass
         if error_str.startswith("no_title_matches:"):
             error_type = "no_title_matches"
             error_message = error_str.replace("no_title_matches: ", "")

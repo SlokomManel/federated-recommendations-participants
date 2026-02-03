@@ -55,5 +55,9 @@ echo "Installing dependencies..."
 uv pip install -e . --quiet
 
 echo ""
+echo "Running pre-flight checks (SyftBox + config)..."
+uv run python -m src.preflight
+
+echo ""
 echo "Starting FastAPI server on http://0.0.0.0:8082"
 uv run python app.py

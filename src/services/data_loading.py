@@ -1,6 +1,7 @@
 """Data loading utilities for participant federated learning."""
 
 import json
+import logging
 import os
 from pathlib import Path
 
@@ -44,20 +45,20 @@ def load_or_initialize_user_matrix(user_id, latent_dim, save_path):
                 # Extend with small random values
                 extension = np.random.normal(scale=0.01, size=(latent_dim - old_dim,))
                 U_u = np.concatenate([U_u, extension])
-                print(
+                logging.info(
                     f"Resized user matrix for {user_id} from {old_dim} -> {latent_dim} (extended)."
                 )
             else:
                 # Truncate to new latent_dim
                 U_u = U_u[:latent_dim]
-                print(
+                logging.info(
                     f"Resized user matrix for {user_id} from {old_dim} -> {latent_dim} (truncated)."
                 )
             # Persist the resized vector
             os.makedirs(save_path, exist_ok=True)
             np.save(user_matrix_path, U_u)
         else:
-            print(f"Loaded existing user matrix for {user_id}.")
+            logging.info(f"Loaded existing user matrix for {user_id}.")
     else:
         U_u = initialize_user_matrix(user_id, latent_dim, save_path)
     return U_u
@@ -69,5 +70,5 @@ def initialize_user_matrix(user_id, latent_dim, save_path):
     U_u = np.random.normal(scale=0.01, size=(latent_dim,))
     user_matrix_path = os.path.join(save_path, "U.npy")
     np.save(user_matrix_path, U_u)
-    print(f"Initialized and saved user matrix for {user_id}.")
+    logging.info(f"Initialized and saved user matrix for {user_id}.")
     return U_u
