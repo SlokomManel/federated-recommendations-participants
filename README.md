@@ -36,15 +36,11 @@ Pick your operating system and follow the step-by-step guide:
 
 ⏱️ **Installation may take a few minutes** — SyftBox needs a few minutes to synchronize with the aggregator on first run. This is normal and expected.
 
-❌ **If you see an error** — close the app, wait **up to 10 minutes**, then try again. Most errors are temporary and will resolve on their own.
-
 ---
 
 ## Questions?
 
-If you run into issues or have questions, refer to the troubleshooting section in your OS-specific installation guide.
-
-## Step 0 — Install `uv` (required)
+If you run into issues or have questions, refer to the troubleshooting section in your OS-specific installation guide or email manel.slokom@live.fr .
 
 If you already have `uv`, skip this step. If you see “uv not found”, do this first.
 
