@@ -52,7 +52,20 @@ Open Terminal and run:
 curl -LsSf https://syftbox.openmined.org/install.sh | sh
 ```
 
-Keep SyftBox running in a separate Terminal window while you use the recommendation app. Start it with:
+After installation, you need to authenticate:
+
+```bash
+syftbox login
+```
+
+You'll be prompted to:
+1. **Enter your email address**
+2. **Check your email** for an authentication code
+3. **Paste the code** when asked
+
+**Important**: This authentication step ensures you're registered as a participant in the study.
+
+Once authenticated, keep SyftBox running in a separate Terminal window while you use the recommendation app:
 
 ```bash
 syftbox

@@ -49,7 +49,10 @@ SyftBox is how you sync with the research aggregator. You have two options:
 1. Visit https://syftbox.net/
 2. Download and install the desktop app for Windows
 3. Open the app after installation
-4. SyftBox will start automatically and sync with the aggregator (may take a few minutes)
+4. **You'll be asked to authenticate**: Enter your email address, then check your email for a code and paste it into the app
+5. SyftBox will then sync with the aggregator (may take a few minutes)
+
+**Important**: This authentication step ensures you're registered as a participant in the study.
 
 **Benefit**: SyftBox runs in the background and can auto-start when you restart your machine.
 
@@ -61,11 +64,24 @@ If you prefer terminal, open PowerShell and run:
 powershell -ExecutionPolicy ByPass -c "irm https://syftbox.net/install.ps1 | iex"
 ```
 
-Then keep SyftBox running in a separate PowerShell window while you use the recommendation app. Start it with:
+After installation, you need to authenticate. Open PowerShell and type:
+
+```powershell
+syftbox login
+```
+
+You'll be prompted to:
+1. **Enter your email address**
+2. **Check your email** for an authentication code
+3. **Paste the code** when asked
+
+Once authenticated, start SyftBox by typing:
 
 ```powershell
 syftbox
 ```
+
+Keep this PowerShell window open while you use the recommendation app.
 
 ---
 
