@@ -61,7 +61,7 @@ SyftBox is how you sync with the research aggregator. You have two options:
 If you prefer terminal, run:
 
 ```bash
-curl -LsSf https://syftbox.openmined.org/install.sh | sh
+curl -fsSL https://syftbox.net/install.sh | sh
 ```
 
 After installation, you need to authenticate:
