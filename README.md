@@ -1,4 +1,4 @@
-# Welcome to Federated Recommendations 👋
+# Welcome to our Federated Recommendations 👋
 
 Thank you for participating in this research study! This app helps us build better recommendations **while keeping your privacy intact**.
 
@@ -12,7 +12,7 @@ Thank you for participating in this research study! This app helps us build bett
 
 ---
 
-## Getting Started
+## Getting started
 
 Pick your operating system and follow the step-by-step guide:
 
@@ -38,6 +38,27 @@ Pick your operating system and follow the step-by-step guide:
 
 ---
 
+## Interface preview (Avant-gout)
+
+Here's what the app looks like as you use it:
+
+### Personalized recommendations 
+![Interface 1](screenshots/1.png)
+
+### Diversity
+![Interface 2](screenshots/2.png)
+
+### Profile dashboard 
+![Interface 3](screenshots/3.png)
+
+---
+
 ## Questions?
 
 If you run into issues or have questions, refer to the troubleshooting section in your OS-specific installation guide or email manel.slokom@live.fr .
+
+---
+
+## Aknowledgement
+
+Manel thanks the AI, Media, and Democracy and CWI for supporting the project.
