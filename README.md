@@ -2,7 +2,7 @@
 
 Thank you for participating in this research study! This app helps us build better recommendations **while keeping your privacy intact**.
 
-## How it works (in plain English)
+## How it works 
 
 📺 **Your Netflix history stays private** — we never send your raw viewing data anywhere. Everything runs locally on your machine.
 
