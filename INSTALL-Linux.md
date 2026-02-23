@@ -23,7 +23,7 @@ uv --version
 **If you see a version number**, skip to Step 2. **If you see "command not found"**, install it:
 
 ```bash
-curl -fsSL https://syftbox.net/install.sh | sh
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 Close and reopen Terminal so `uv` is available.
